@@ -13,7 +13,11 @@ package Padre::Plugin::SpellCheck;
 use warnings;
 use strict;
 
-our $VERSION = '0.02';
+use File::Basename        qw{ fileparse };
+use File::Spec::Functions qw{ catfile };
+use Module::Util          qw{ find_installed };
+
+our $VERSION = '0.03';
 
 use base 'Padre::Plugin';
 use Padre::Current ();
@@ -23,6 +27,18 @@ use Padre::Current ();
 
 # plugin name
 sub plugin_name { 'Spell checking' }
+
+# plugin icon
+sub plugin_icon {
+    # find resource path
+    my $pkgpath = find_installed(__PACKAGE__);
+    my (undef, $dirname, undef) = fileparse($pkgpath);
+    my $iconpath = catfile( $dirname,
+        'SpellCheck', 'share', 'icons', 'spellcheck.png');
+
+    # create and return icon
+    return Wx::Bitmap->new( $iconpath, Wx::wxBITMAP_TYPE_PNG );
+}
 
 # padre interfaces
 sub padre_interfaces {
@@ -115,6 +131,8 @@ The following methods are implemented:
 
 =item padre_interfaces()
 
+=item plugin_icon()
+
 =item plugin_name()
 
 =back
@@ -142,6 +160,9 @@ notified of progress on your bug as I make changes.
 
 
 =head1 SEE ALSO
+
+Plugin icon courtesy of Mark James, at
+L<http://www.famfamfam.com/lab/icons/silk/>.
 
 Our svn repository is located at L<http://svn.perlide.org/padre/trunk/Padre-Plugin-
 SpellCheck>, and can be browsed at L<http://padre.perlide.org/browser/trunk/Padre-Plugin-
