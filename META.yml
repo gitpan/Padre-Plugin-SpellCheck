@@ -1,23 +1,25 @@
 ---
-abstract: "Spell Check in Padre\r"
-author:
-  - 'Fayland Lam <fayland@gmail.com>'
-build_requires:
-  Test::More: 0
-distribution_type: module
-generated_by: 'Module::Install version 0.78'
-license: perl
-meta-spec:
-  url: http://module-build.sourceforge.net/META-spec-v1.4.html
-  version: 1.4
 name: Padre-Plugin-SpellCheck
-no_index:
-  directory:
-    - inc
-    - t
-requires:
-  Padre: 0.26
-  Text::Aspell: 0
+version: 0.02
+author:
+  - 'Jerome Quelin <jquelin@gmail.com>'
+abstract: check spelling in Padre
+license: perl
 resources:
   license: http://dev.perl.org/licenses/
-version: 0.01
+requires:
+  File::Basename: 0
+  File::Spec::Functions: 0
+  Module::Util: 0
+  Padre: 0.26
+  Text::Aspell: 0
+build_requires:
+  Test::More: 0
+provides:
+  Padre::Plugin::SpellCheck:
+    file: lib/Padre/Plugin/SpellCheck.pm
+    version: 0.02
+generated_by: Module::Build version 0.32
+meta-spec:
+  url: http://module-build.sourceforge.net/META-spec-v1.2.html
+  version: 1.2
