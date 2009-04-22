@@ -5,6 +5,7 @@ WriteMakefile
           'NAME' => 'Padre::Plugin::SpellCheck',
           'VERSION_FROM' => 'lib/Padre/Plugin/SpellCheck.pm',
           'PREREQ_PM' => {
+                           'Class::XSAccessor' => 0,
                            'File::Basename' => 0,
                            'File::Spec::Functions' => 0,
                            'Module::Util' => 0,

@@ -1,6 +1,5 @@
 #
 # This file is part of Padre::Plugin::SpellCheck.
-# Copyright (c) 2009 Fayland Lam, all rights reserved.
 # Copyright (c) 2009 Jerome Quelin, all rights reserved.
 #
 # This program is free software; you can redistribute it and/or modify
@@ -27,6 +26,7 @@ my $builder = Module::Build->new(
         'Module::Util'          => 0,
         'Padre'                 => '0.26',
         'Text::Aspell'          => 0,
+        'Class::XSAccessor'     => 0,
     },
     add_to_cleanup      => [ 'Padre-Plugin-SpellCheck-*',
         map { ( '*/' x $_ ) . '*~' } 0..5 ],

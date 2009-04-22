@@ -1,6 +1,5 @@
 #
 # This file is part of Padre::Plugin::SpellCheck.
-# Copyright (c) 2009 Fayland Lam, all rights reserved.
 # Copyright (c) 2009 Jerome Quelin, all rights reserved.
 #
 # This program is free software; you can redistribute it and/or modify
@@ -17,10 +16,12 @@ use File::Basename        qw{ fileparse };
 use File::Spec::Functions qw{ catfile };
 use Module::Util          qw{ find_installed };
 
-our $VERSION = '0.03';
+our $VERSION = '1.0.0';
 
 use base 'Padre::Plugin';
-use Padre::Current ();
+use Padre::Current;
+use Padre::Plugin::SpellCheck::Dialog;
+use Padre::Plugin::SpellCheck::Engine;
 
 
 # -- padre plugin api, refer to Padre::Plugin
@@ -48,7 +49,7 @@ sub padre_interfaces {
 # plugin menu.
 sub menu_plugins_simple {
     'Spell Check' => [
-        'Check spelling' => 'spell_check',
+        "Check spelling\tF7" => 'spell_check',
     ];
 }
 
@@ -57,43 +58,32 @@ sub menu_plugins_simple {
 
 sub spell_check {
     my ( $self ) = shift;
-    
-    my $speller;
-    eval {
-        require Text::Aspell;
-        $speller = Text::Aspell->new;
-        $speller->set_option('sug-mode', 'fast');
-        # TODO, configurable later
-        $speller->set_option('lang','en_US');
-    };
-    if ( $@ ) {
-        Padre::Current->main->error( $@ );
+
+    my $main   = Padre::Current->main;
+    my $engine = Padre::Plugin::SpellCheck::Engine->new;
+
+    # fetch text to check
+    my $selection = Padre::Current->text;
+    my $wholetext = Padre::Current->document->text_get;
+    my $text   = $selection || $wholetext;
+    my $offset = $selection ? Padre::Current->editor->GetSelectionStart : 0;
+
+    # try to find a mistake
+    my ($word, $pos) = $engine->check( $text );
+
+    # no mistake means we're done
+    if ( not defined $word ) {
+        $main->message( Wx::gettext( 'Spell check finished.' ), 'Padre' );
         return;
     }
-    
-    my $src  = Padre::Current->text;
-    my $doc  = Padre::Current->document;
-    my $text = $src ? $src : $doc->text_get;
-    
-    Padre::Current->main->show_output(1);
-    Padre::Current->main->output->clear;
-    my $has_bad = 0;
-    
-    foreach my $word ( split /\b/, $text ){
-        # Skip empty strings and non-spellable words
-        next unless defined $word;
-        next unless ($word =~ /^\p{L}+$/i);
-        next if $speller->check( $word ) || $word =~ /^\d+$/;
-        my @suggestions = $speller->suggest( $word );
-        Padre::Current->main->output->AppendText("wrong $word, suggest: " . join(', ', @suggestions) . "\n");
-        $has_bad = 1;
-    }
-    
-    unless ( $has_bad ) {
-        Padre::Current->main->output->AppendText("Everything seems OK around");
-    }
 
-    return 1;
+    my $dialog = Padre::Plugin::SpellCheck::Dialog->new(
+        text   => $text,
+        error  => [ $word, $pos ],
+        engine => $engine,
+        offset => $offset,
+    );
+    $dialog->Show;
 }
 
 1;
@@ -105,10 +95,18 @@ Padre::Plugin::SpellCheck - check spelling in Padre
 
 
 
+=head1 SYNOPSIS
+
+    $ padre file-with-spell-errors
+    F7
+
+
+
 =head1 DESCRIPTION
 
-This plugins allows one to checking her text spelling within Padre. It
-is using C<Text::Aspell> underneath, so check this module's pod for more
+This plugins allows one to checking her text spelling within Padre using
+C<F7> (standard spelling shortcut accross text processors). It is using
+C<Text::Aspell> underneath, so check this module's pod for more
 information.
 
 Of course, you need to have the aspell binary and dictionnary installed.
