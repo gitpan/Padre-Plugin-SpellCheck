@@ -1,5 +1,23 @@
 Revision history for Padre-Plugin-SpellCheck
 
+1.1.0 Wed Apr 29 18:03:45 CEST 2009
+ - possibility to choose dictionary language
+   (but wx::stc has unicode bugs which prevents this feature to be
+   really useful on non-ascii texts)   
+ - plugin i18n-ed, ready to accept translations
+ - arabic translation added (courtesy of azawawi++)
+ - brazilian portuguese translation added (courtesy of garu++)
+ - french translation added
+ - polish translation added (courtesy of therek++)
+
+**
+
+1.0.0 Wed Apr 22 17:51:37 CEST 2009
+ - using a dedicated spellcheck dialog
+ - on error, possibility to replace, replace all, ignore, ignore all
+
+**
+
 0.03 Sun Apr  5 17:28:58 CEST 2009
  - providing an icon for padre's plugin manager
 

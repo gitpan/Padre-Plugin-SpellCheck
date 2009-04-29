@@ -13,32 +13,37 @@ use warnings;
 use strict;
 
 use File::Basename        qw{ fileparse };
-use File::Spec::Functions qw{ catfile };
+use File::Spec::Functions qw{ catdir catfile };
 use Module::Util          qw{ find_installed };
 
-our $VERSION = '1.0.0';
+our $VERSION = '1.1.0';
 
 use base 'Padre::Plugin';
 use Padre::Current;
 use Padre::Plugin::SpellCheck::Dialog;
 use Padre::Plugin::SpellCheck::Engine;
+use Padre::Plugin::SpellCheck::Preferences;
 
 
 # -- padre plugin api, refer to Padre::Plugin
 
 # plugin name
-sub plugin_name { 'Spell checking' }
+sub plugin_name { Wx::gettext('Spell check') }
 
 # plugin icon
 sub plugin_icon {
     # find resource path
     my $pkgpath = find_installed(__PACKAGE__);
     my (undef, $dirname, undef) = fileparse($pkgpath);
-    my $iconpath = catfile( $dirname,
-        'SpellCheck', 'share', 'icons', 'spellcheck.png');
+    my $iconpath = catfile( _sharedir(), 'icons', 'spellcheck.png');
 
     # create and return icon
     return Wx::Bitmap->new( $iconpath, Wx::wxBITMAP_TYPE_PNG );
+}
+
+# directory where to find the translations
+sub plugin_locale_directory {
+    return catdir( _sharedir(), 'locale' );
 }
 
 # padre interfaces
@@ -48,19 +53,28 @@ sub padre_interfaces {
 
 # plugin menu.
 sub menu_plugins_simple {
-    'Spell Check' => [
-        "Check spelling\tF7" => 'spell_check',
+    Wx::gettext('Spell check') => [
+        Wx::gettext("Check spelling\tF7") => 'spell_check',
+        Wx::gettext("Preferences")        => 'spell_preferences',
     ];
 }
 
 
 # -- public methods
 
+sub config {
+    my ($self) = @_;
+    my $config = {
+        dictionary => 'en_US',
+    };
+    return $self->config_read || $config;
+}
+
 sub spell_check {
-    my ( $self ) = shift;
+    my ($self) = @_;
 
     my $main   = Padre::Current->main;
-    my $engine = Padre::Plugin::SpellCheck::Engine->new;
+    my $engine = Padre::Plugin::SpellCheck::Engine->new($self);
 
     # fetch text to check
     my $selection = Padre::Current->text;
@@ -82,8 +96,30 @@ sub spell_check {
         error  => [ $word, $pos ],
         engine => $engine,
         offset => $offset,
+        plugin => $self,
     );
-    $dialog->Show;
+    $dialog->ShowModal;
+}
+
+sub spell_preferences {
+    my ($self) = @_;
+    my $prefs  = Padre::Plugin::SpellCheck::Preferences->new($self);
+    $prefs->Show;
+}
+
+
+# -- private methods
+
+#
+# my $dir = $self->_sharedir;
+#
+# return the private share directory where the module resources are stored.
+#
+sub _sharedir {
+    # find resource path
+    my $pkgpath = find_installed(__PACKAGE__);
+    my (undef, $dirname, undef) = fileparse($pkgpath);
+    return catdir( $dirname, 'SpellCheck', 'share' );
 }
 
 1;
@@ -105,9 +141,12 @@ Padre::Plugin::SpellCheck - check spelling in Padre
 =head1 DESCRIPTION
 
 This plugins allows one to checking her text spelling within Padre using
-C<F7> (standard spelling shortcut accross text processors). It is using
-C<Text::Aspell> underneath, so check this module's pod for more
-information.
+C<F7> (standard spelling shortcut accross text processors). One can change
+the dictionary language used in the preferences window (menu Plugins /
+SpellCheck / Preferences).
+
+This plugin is using C<Text::Aspell> underneath, so check this module's
+pod for more information.
 
 Of course, you need to have the aspell binary and dictionnary installed.
 
@@ -131,6 +170,8 @@ The following methods are implemented:
 
 =item plugin_icon()
 
+=item plugin_locale_directory()
+
 =item plugin_name()
 
 =back
@@ -140,15 +181,31 @@ The following methods are implemented:
 
 =over 4
 
+=item * config()
+
+Return the plugin's configuration, or a suitable default one if none
+exist previously.
+
 =item * spell_check()
 
 Spell checks the current selection (or the whole document).
+
+=item * spell_preferences()
+
+Open the check spelling preferences window.
 
 =back
 
 
 
 =head1 BUGS
+
+Spell-checking non-ascii files has bugs: the selection does not
+match the word boundaries, and as the spell checks moves further in
+the document, offsets are totally irrelevant. This is a bug in
+C<Wx::StyledTextCtrl> that has some unicode problems... So
+unfortunately, there's nothing that I can do in this plugin to
+tackle this bug.
 
 Please report any bugs or feature requests to C<padre-plugin-spellcheck
 at rt.cpan.org>, or through the web interface at L<http://rt.cpan.org/NoAuth/ReportBug.html?Queue=Padre-Plugin-

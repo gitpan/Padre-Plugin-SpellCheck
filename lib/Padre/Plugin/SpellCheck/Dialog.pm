@@ -13,12 +13,13 @@ use warnings;
 use strict;
 
 use Class::XSAccessor accessors => {
+    _autoreplace => '_autoreplace',  # list of automatic replaces
     _engine      => '_engine',       # pps:engine object
     _error       => '_errorpos',     # first error spotted [ $word, $pos ]
     _label       => '_label',        # label hosting the misspelled word
     _list        => '_list',         # listbox listing the suggestions
     _offset      => '_offset',       # offset of _text within the editor
-    _autoreplace => '_autoreplace',  # list of automatic replaces
+    _plugin      => '_plugin',       # reference to spellcheck plugin
     _sizer       => '_sizer',        # window sizer
     _text        => '_text',         # text being spellchecked
 };
@@ -35,10 +36,11 @@ sub new {
     my ($class, %params) = @_;
 
     # create object
-    my $self = $class->SUPER::new(
+    my $config = $params{plugin}->config;
+    my $self   = $class->SUPER::new(
         Padre::Current->main,
         -1,
-        Wx::gettext('Spelling'),
+        sprintf( Wx::gettext('Spelling (%s)'), $config->{dictionary} ),
         Wx::wxDefaultPosition,
         Wx::wxDefaultSize,
         Wx::wxDEFAULT_FRAME_STYLE|Wx::wxTAB_TRAVERSAL,
@@ -48,6 +50,7 @@ sub new {
     $self->_engine( $params{engine} );
     $self->_offset( $params{offset} );
     $self->_text  ( $params{text}   );
+    $self->_plugin( $params{plugin} );
     $self->_autoreplace( {} );
 
     # create dialog
@@ -162,18 +165,23 @@ sub _create {
     my ($self) = @_;
 
     # create sizer that will host all controls
-    my $vbox  = Wx::BoxSizer->new( Wx::wxVERTICAL );
     my $sizer = Wx::GridBagSizer->new( 5, 5 );
-    $vbox->Add( $sizer, 1, Wx::wxEXPAND|Wx::wxALL, 5 );
     $sizer->AddGrowableCol(1);
     $sizer->AddGrowableRow(6);
     $self->_sizer($sizer);
 
+    # create the controls
     $self->_create_labels;
     $self->_create_list;
     $self->_create_buttons;
+
+    # wrap everything in a vbox to add some padding
+    my $vbox  = Wx::BoxSizer->new( Wx::wxVERTICAL );
+    $vbox->Add( $sizer, 1, Wx::wxEXPAND|Wx::wxALL, 5 );
     $self->SetSizerAndFit($vbox);
     $vbox->SetSizeHints($self);
+
+    # set focus on listbox
     $self->_list->SetFocus;
 }
 
@@ -222,16 +230,14 @@ sub _create_labels {
     my $sizer  = $self->_sizer;
 
     # create the labels...
-    my $lab1 = Wx::StaticText->new( $self, -1, Wx::gettext('Not in dictionary:') );
-    my $lab2 = Wx::StaticText->new( $self, -1, Wx::gettext('Suggestions') );
+    my $label   = Wx::StaticText->new( $self, -1, Wx::gettext('Not in dictionary:') );
     my $labword = Wx::StaticText->new( $self, -1, 'w'x25 );
     $labword->SetBackgroundColour( Wx::Colour->new('#ffaaaa') );
     $labword->Refresh;
     $self->_label($labword);
 
     # ... and place them
-    $sizer->Add( $lab1,    Wx::GBPosition->new(0,0) );
-    $sizer->Add( $lab2,    Wx::GBPosition->new(1,0), Wx::GBSpan->new(1,3), Wx::wxEXPAND );
+    $sizer->Add( $label,   Wx::GBPosition->new(0,0) );
     $sizer->Add( $labword, Wx::GBPosition->new(0,1), Wx::GBSpan->new(1,1), Wx::wxEXPAND );
 }
 
@@ -244,7 +250,10 @@ sub _create_labels {
 #
 sub _create_list {
     my ($self) = @_;
+    my $sizer  = $self->_sizer;
 
+    my $lab  = Wx::StaticText->new( $self, -1, Wx::gettext('Suggestions') );
+    $sizer->Add( $lab, Wx::GBPosition->new(1,0), Wx::GBSpan->new(1,3), Wx::wxEXPAND );
     my $list = Wx::ListView->new(
         $self,
         -1,
@@ -252,7 +261,7 @@ sub _create_list {
         Wx::wxDefaultSize,
         Wx::wxLC_SINGLE_SEL,
     );
-    $self->_sizer->Add( $list,
+    $sizer->Add( $list,
         Wx::GBPosition->new(2,0),
         Wx::GBSpan->new(5,2),
         Wx::wxEXPAND
@@ -351,6 +360,7 @@ sub _update {
     $list->DeleteAllItems;
     my $i = 0;
     foreach my $w ( reverse @suggestions ) {
+        next unless defined $w;
         my $item = Wx::ListItem->new;
         $item->SetText($w);
         my $idx = $list->InsertItem($item);
