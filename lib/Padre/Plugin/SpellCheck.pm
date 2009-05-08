@@ -16,7 +16,7 @@ use File::Basename        qw{ fileparse };
 use File::Spec::Functions qw{ catdir catfile };
 use Module::Util          qw{ find_installed };
 
-our $VERSION = '1.1.0';
+our $VERSION = '1.1.1';
 
 use base 'Padre::Plugin';
 use Padre::Current;
@@ -72,8 +72,15 @@ sub config {
 
 sub spell_check {
     my ($self) = @_;
-
     my $main   = Padre::Current->main;
+
+    # TODO: maybe grey out the menu option if
+    # no file is opened?
+    unless ($main->current->document) {
+        $main->message( Wx::gettext( 'No document opened.' ), 'Padre' );
+	    return;
+    }
+    
     my $engine = Padre::Plugin::SpellCheck::Engine->new($self);
 
     # fetch text to check

@@ -13,9 +13,13 @@ use warnings;
 use strict;
 
 use Class::XSAccessor accessors => {
-    _ignore  => '_ignore',      # list of words to ignore
-    _plugin  => '_plugin',      # ref to spellecheck plugin
-    _speller => '_speller',     # real text::aspell object
+    _ignore    => '_ignore',    # list of words to ignore
+    _plugin    => '_plugin',    # ref to spellecheck plugin
+    _speller   => '_speller',   # real text::aspell object
+    _utf_chars => '_utf_chars', # FIXME: as soon as wxWidgets/wxPerl supports
+                                # newer version of STC:
+                                # number of UTF8 characters
+                                # used in calculating current possition
 };
 use Text::Aspell;
 
@@ -26,8 +30,9 @@ sub new {
     my ($class, $plugin) = @_;
 
     my $self = bless {
-        _ignore => {},
-        _plugin => $plugin,
+        _ignore    => {},
+        _plugin    => $plugin,
+        _utf_chars => 0,
     }, $class;
 
     # create speller object
@@ -56,13 +61,29 @@ sub check {
         # skip...
         next unless defined $word;              # empty strings
         next unless $word =~ /^\p{Letter}+$/i;  # non-spellable words
-        next if exists $ignore->{$word};        # ignored words
 
-        # check spelling
-        next if $speller->check( $word );
+        # FIXME: when STC issues will be resolved:
+        # count number of UTF8 characters in ignored/correct words
+        # it's going to be used to calculate relative position
+        # of next problematic word
+        if ( exists $ignore->{$word} ) {
+            $self->_count_utf_chars( $word );
+            next;
+        }
+        if ( $speller->check( $word ) ) {
+            $self->_count_utf_chars( $word );
+            next;
+        }
+
+        # uncomment when fixed above
+#        next if exists $ignore->{$word};        # ignored words
+#
+#        # check spelling
+#        next if $speller->check( $word );
 
         # oops! spell mistake!
         my $pos = pos($text) - length($word);
+
         return $word, $pos;
     }
 
@@ -87,6 +108,21 @@ sub ignore {
 sub suggestions {
     my ($self, $word) = @_;
     return $self->_speller->suggest( $word );
+}
+
+# -- private methods
+
+#
+# FIXME: as soon as STC issues is resolved
+#
+sub _count_utf_chars {
+    my ($self, $word) = @_;
+
+    foreach ( split //, $word ) {
+        $self->{_utf_chars}++ if ord($_) >= 128;
+    }
+
+    return;
 }
 
 1;

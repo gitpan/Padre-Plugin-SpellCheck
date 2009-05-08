@@ -26,6 +26,7 @@ use Class::XSAccessor accessors => {
 
 use Padre::Current;
 use Padre::Wx ();
+use Encode;
 
 use base 'Wx::Dialog';
 
@@ -103,6 +104,12 @@ sub _on_butignore_clicked {
     $self->_text( $text );
     my $offset = $self->_offset + $pos;
     $self->_offset( $offset );
+
+    # FIXME: as soon as STC issue is resolved:
+    # Include UTF8 characters from ignored word
+    # to overall count of UTF8 characters
+    # so we can set proper selections
+    $self->_engine->_count_utf_chars( $word );
 
     # try to find next error
     $self->_next;
@@ -319,10 +326,16 @@ sub _replace {
     my $error  = $self->_error;
     my $offset = $self->_offset;
     my ($word, $pos) = @$error;
-    my $from = $offset + $pos;
-    my $to   = $from + length $word;
+    my $from = $offset + $pos + $self->_engine->_utf_chars;
+    my $to   = $from + length Encode::encode_utf8( $word );
     $editor->SetSelection( $from, $to );
     $editor->ReplaceSelection( $new );
+
+    # FIXME: as soon as STC issue is resolved:
+    # Include UTF8 characters from newly added word
+    # to overall count of UTF8 characters
+    # so we can set proper selections
+    $self->_engine->_count_utf_chars( $new );
 
     # remove the beginning of the text, up to after replaced word
     my $posold = $pos + length $word;
@@ -346,8 +359,8 @@ sub _update {
     # update selection in parent window
     my $editor = Padre::Current->editor;
     my $offset = $self->_offset;
-    my $from = $offset + $pos;
-    my $to   = $from + length $word;
+    my $from = $offset + $pos + $self->_engine->_utf_chars;
+    my $to   = $from + length Encode::encode_utf8( $word );
     $editor->goto_pos_centerize($from);
     $editor->SetSelection( $from, $to );
 
