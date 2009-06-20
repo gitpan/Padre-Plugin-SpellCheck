@@ -6,14 +6,24 @@ lib/Padre/Plugin/SpellCheck/Engine.pm
 lib/Padre/Plugin/SpellCheck/Preferences.pm
 lib/Padre/Plugin/SpellCheck/share/icons/spellcheck.png
 lib/Padre/Plugin/SpellCheck/share/locale/SpellCheck-ar.mo
+lib/Padre/Plugin/SpellCheck/share/locale/SpellCheck-ar.po
+lib/Padre/Plugin/SpellCheck/share/locale/SpellCheck-es-es.mo
+lib/Padre/Plugin/SpellCheck/share/locale/SpellCheck-es-es.po
 lib/Padre/Plugin/SpellCheck/share/locale/SpellCheck-fr-fr.mo
+lib/Padre/Plugin/SpellCheck/share/locale/SpellCheck-fr-fr.po
+lib/Padre/Plugin/SpellCheck/share/locale/SpellCheck-nl-nl.mo
+lib/Padre/Plugin/SpellCheck/share/locale/SpellCheck-nl-nl.po
 lib/Padre/Plugin/SpellCheck/share/locale/SpellCheck-pl.mo
+lib/Padre/Plugin/SpellCheck/share/locale/SpellCheck-pl.po
 lib/Padre/Plugin/SpellCheck/share/locale/SpellCheck-pt-br.mo
+lib/Padre/Plugin/SpellCheck/share/locale/SpellCheck-pt-br.po
+lib/Padre/Plugin/SpellCheck/share/locale/SpellCheck-zh-tw.mo
+lib/Padre/Plugin/SpellCheck/share/locale/SpellCheck-zh-tw.po
 LICENSE
-Makefile.PL
 MANIFEST			This list of files
 META.yml
 README
 t/0-load.t
 t/9-pod-coverage.t
 t/9-pod.t
+Makefile.PL

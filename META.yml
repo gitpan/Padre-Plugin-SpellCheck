@@ -1,12 +1,14 @@
 ---
 name: Padre-Plugin-SpellCheck
-version: 1.1.1
+version: 1.1.2
 author:
   - 'Jerome Quelin <jquelin@gmail.com>'
 abstract: check spelling in Padre
 license: perl
 resources:
+  homepage: http://padre.perlide.org/
   license: http://dev.perl.org/licenses/
+  repository: http://svn.perlide.org/padre/trunk/Padre-Plugin-SpellCheck/
 requires:
   Class::XSAccessor: 0
   File::Basename: 0
@@ -19,14 +21,17 @@ build_requires:
 provides:
   Padre::Plugin::SpellCheck:
     file: lib/Padre/Plugin/SpellCheck.pm
-    version: 1.1.1
+    version: 1.1.2
   Padre::Plugin::SpellCheck::Dialog:
     file: lib/Padre/Plugin/SpellCheck/Dialog.pm
+    version: 1.1.2
   Padre::Plugin::SpellCheck::Engine:
     file: lib/Padre/Plugin/SpellCheck/Engine.pm
+    version: 1.1.2
   Padre::Plugin::SpellCheck::Preferences:
     file: lib/Padre/Plugin/SpellCheck/Preferences.pm
-generated_by: Module::Build version 0.32
+    version: 1.1.2
+generated_by: Module::Build version 0.33
 meta-spec:
-  url: http://module-build.sourceforge.net/META-spec-v1.2.html
-  version: 1.2
+  url: http://module-build.sourceforge.net/META-spec-v1.4.html
+  version: 1.4

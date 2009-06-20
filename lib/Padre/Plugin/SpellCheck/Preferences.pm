@@ -12,6 +12,8 @@ package Padre::Plugin::SpellCheck::Preferences;
 use warnings;
 use strict;
 
+our $VERSION = '1.1.2';
+
 use Class::XSAccessor accessors => {
     _dict_combo  => '_dict_combo',   # combo box holding dictionary
     _plugin      => '_plugin',       # plugin to be configured
@@ -20,6 +22,7 @@ use Class::XSAccessor accessors => {
 
 use Padre::Current;
 use Padre::Wx ();
+use Padre::Util           ('_T');
 
 use base 'Wx::Dialog';
 
@@ -33,7 +36,7 @@ sub new {
     my $self = $class->SUPER::new(
         Padre::Current->main,
         -1,
-        Wx::gettext('Spelling preferences'),
+        _T('Spelling preferences'),
         Wx::wxDefaultPosition,
         Wx::wxDefaultSize,
         Wx::wxDEFAULT_FRAME_STYLE|Wx::wxTAB_TRAVERSAL,
@@ -133,7 +136,7 @@ sub _create_dictionaries {
     my $default = exists $choices{$deflang} ? $deflang : $choices[0];
 
     # create the controls
-    my $label = Wx::StaticText->new( $self, -1, Wx::gettext('Dictionary:') );
+    my $label = Wx::StaticText->new( $self, -1, _T('Dictionary:') );
     my $combo = Wx::ComboBox->new( $self, -1,
         $default,
         Wx::wxDefaultPosition,
