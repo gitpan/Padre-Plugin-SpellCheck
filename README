@@ -1,61 +1,13 @@
-Padre-Plugin-SpellCheck
-=======================
-
-This plugins allows one to checking her text spelling within Padre. It
-is using Text::Aspell underneath, so check this module's pod for more
-information.
-
-Of course, you need to have the aspell binary and dictionnary installed.
 
 
-INSTALLATION
-============
+This archive contains the distribution Padre-Plugin-SpellCheck,
+version 1.1.3:
 
-To install this module, run the following commands:
+  Check spelling in Padre
 
-	perl Build.PL
-	./Build
-	./Build test
-	./Build install
+This software is copyright (c) 2010 by Fayland Lam, Jerome Quelin.
 
-
-SUPPORT AND DOCUMENTATION
-=========================
-
-After installing, you can find documentation for this module with the
-perldoc command.
-
-    perldoc Padre::Plugin::SpellCheck
+This is free software; you can redistribute it and/or modify it under
+the same terms as the Perl 5 programming language system itself.
 
 
-You can also look for information at:
-
-    RT, CPAN's request tracker
-        http://rt.cpan.org/NoAuth/Bugs.html?Dist=Padre-Plugin-SpellCheck
-
-    AnnoCPAN, Annotated CPAN documentation
-        http://annocpan.org/dist/Padre-Plugin-SpellCheck
-
-    CPAN Ratings
-        http://cpanratings.perl.org/d/Padre-Plugin-SpellCheck
-
-    Search CPAN
-        http://search.cpan.org/dist/Padre-Plugin-SpellCheck/
-
-
-AUTHOR
-======
-
-Jerome Quelin, <jquelin@cpan.org>
-
-Original version from Fayland Lam, <fayland@gmail.com>
-
-
-COPYRIGHT & LICENSE
-===================
-
-Copyright (c) 2009 Fayland Lam, all rights reserved.
-Copyright (c) 2009 Jerome Quelin, all rights reserved.
-
-This program is free software; you can redistribute it and/or modify it
-under the same terms as Perl itself.

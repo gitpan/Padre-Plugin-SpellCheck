@@ -1,44 +1,44 @@
-#
-# This file is part of Padre::Plugin::SpellCheck.
-# Copyright (c) 2009 Jerome Quelin, all rights reserved.
-#
-# This program is free software; you can redistribute it and/or modify
-# it under the same terms as Perl itself.
-#
-#
 
 use strict;
 use warnings;
 
-use Module::Build;
+use Module::Build 0.3601;
 
-my $builder = Module::Build->new(
-    module_name         => 'Padre::Plugin::SpellCheck',
-    license             => 'perl',
-    dist_author         => 'Jerome Quelin <jquelin@gmail.com>',
-    dist_version_from   => 'lib/Padre/Plugin/SpellCheck.pm',
-    build_requires => {
-        'Test::More' => 0,
-    },
-    requires => {
-        'File::Basename'        => 0,
-        'File::Spec::Functions' => 0,
-        'Module::Util'          => 0,
-        'Padre'                 => '0.26',
-        'Text::Aspell'          => 0,
-        'Class::XSAccessor'     => 0,
-    },
-    add_to_cleanup      => [ 'Padre-Plugin-SpellCheck-*',
-        map { ( '*/' x $_ ) . '*~' } 0..5 ],
-    create_makefile_pl  => 'traditional',
-    meta_merge     => {
-        resources => {
-            homepage   => 'http://padre.perlide.org/',
-            repository => 'http://svn.perlide.org/padre/trunk/Padre-Plugin-SpellCheck/',
-        }
-    },
+
+my %module_build_args = (
+  'build_requires' => {
+    'Locale::Msgfmt' => '0.14',
+    'Module::Build' => '0.3601',
+    'Test::More' => '0'
+  },
+  'configure_requires' => {
+    'Module::Build' => '0.3601'
+  },
+  'dist_abstract' => 'Check spelling in Padre',
+  'dist_author' => [
+    'Fayland Lam <fayland at gmail.com>',
+    'Jerome Quelin <jquelin@gmail.com>',
+    'Ahmad M. Zawawi <ahmad.zawawi@gmail.com>'
+  ],
+  'dist_name' => 'Padre-Plugin-SpellCheck',
+  'dist_version' => '1.1.3',
+  'license' => 'perl',
+  'module_name' => 'Padre::Plugin::SpellCheck',
+  'recommends' => {},
+  'recursive_test_files' => 1,
+  'requires' => {
+    'Class::XSAccessor' => '0',
+    'Module::Util' => '0',
+    'Padre' => '0.57',
+    'Text::Aspell' => '0'
+  },
+  'script_files' => [],
+  'share_dir' => {
+    'dist' => 'share'
+  }
 );
-$builder->add_build_element('mo');
-$builder->add_build_element('png');
 
-$builder->create_build_script();
+
+my $build = Module::Build->new(%module_build_args);
+
+$build->create_build_script;

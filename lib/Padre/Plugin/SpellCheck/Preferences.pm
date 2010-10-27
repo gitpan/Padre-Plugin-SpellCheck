@@ -1,28 +1,22 @@
-#
-# This file is part of Padre::Plugin::SpellCheck.
-# Copyright (c) 2009 Jerome Quelin, all rights reserved.
-#
-# This program is free software; you can redistribute it and/or modify
-# it under the same terms as Perl itself.
-#
-#
-
 package Padre::Plugin::SpellCheck::Preferences;
+BEGIN {
+  $Padre::Plugin::SpellCheck::Preferences::VERSION = '1.1.3';
+}
+
+# ABSTRACT: Preferences dialog for padre spell check
 
 use warnings;
 use strict;
 
-our $VERSION = '1.1.2';
-
 use Class::XSAccessor accessors => {
-    _dict_combo  => '_dict_combo',   # combo box holding dictionary
-    _plugin      => '_plugin',       # plugin to be configured
-    _sizer       => '_sizer',        # window sizer
+	_dict_combo => '_dict_combo', # combo box holding dictionary
+	_plugin     => '_plugin',     # plugin to be configured
+	_sizer      => '_sizer',      # window sizer
 };
 
 use Padre::Current;
-use Padre::Wx ();
-use Padre::Util           ('_T');
+use Padre::Wx   ();
+use Padre::Util ('_T');
 
 use base 'Wx::Dialog';
 
@@ -30,24 +24,24 @@ use base 'Wx::Dialog';
 # -- constructor
 
 sub new {
-    my ($class, $plugin) = @_;
+	my ( $class, $plugin ) = @_;
 
-    # create object
-    my $self = $class->SUPER::new(
-        Padre::Current->main,
-        -1,
-        _T('Spelling preferences'),
-        Wx::wxDefaultPosition,
-        Wx::wxDefaultSize,
-        Wx::wxDEFAULT_FRAME_STYLE|Wx::wxTAB_TRAVERSAL,
-    );
-    $self->SetIcon( Wx::GetWxPerlIcon() );
-    $self->_plugin($plugin);
+	# create object
+	my $self = $class->SUPER::new(
+		Padre::Current->main,
+		-1,
+		_T('Spelling preferences'),
+		Wx::wxDefaultPosition,
+		Wx::wxDefaultSize,
+		Wx::wxDEFAULT_FRAME_STYLE | Wx::wxTAB_TRAVERSAL,
+	);
+	$self->SetIcon( Wx::GetWxPerlIcon() );
+	$self->_plugin($plugin);
 
-    # create dialog
-    $self->_create;
+	# create dialog
+	$self->_create;
 
-    return $self;
+	return $self;
 }
 
 
@@ -57,21 +51,21 @@ sub new {
 # $self->_on_butok_clicked;
 #
 # handler called when the ok button has been clicked.
-# 
+#
 sub _on_butok_clicked {
-    my ($self) = @_;
-    my $plugin = $self->_plugin;
+	my ($self) = @_;
+	my $plugin = $self->_plugin;
 
-    # read plugin preferences
-    my $prefs = $plugin->config;
+	# read plugin preferences
+	my $prefs = $plugin->config;
 
-    # overwrite dictionary preference
-    my $dic = $self->_dict_combo->GetValue;
-    $prefs->{dictionary} = $dic;
+	# overwrite dictionary preference
+	my $dic = $self->_dict_combo->GetValue;
+	$prefs->{dictionary} = $dic;
 
-    # store plugin preferences
-    $plugin->config_write($prefs);
-    $self->Destroy;
+	# store plugin preferences
+	$plugin->config_write($prefs);
+	$self->Destroy;
 }
 
 
@@ -85,22 +79,22 @@ sub _on_butok_clicked {
 # no params, no return values.
 #
 sub _create {
-    my ($self) = @_;
+	my ($self) = @_;
 
-    # create sizer that will host all controls
-    my $sizer = Wx::BoxSizer->new( Wx::wxVERTICAL );
-    $self->_sizer($sizer);
+	# create sizer that will host all controls
+	my $sizer = Wx::BoxSizer->new(Wx::wxVERTICAL);
+	$self->_sizer($sizer);
 
-    # create the controls
-    $self->_create_dictionaries;
-    $self->_create_buttons;
+	# create the controls
+	$self->_create_dictionaries;
+	$self->_create_buttons;
 
-    # setting focus on dictionary first
-    $self->_dict_combo->SetFocus;
+	# setting focus on dictionary first
+	$self->_dict_combo->SetFocus;
 
-    # wrap everything in a vbox to add some padding
-    $self->SetSizerAndFit($sizer);
-    $sizer->SetSizeHints($self);
+	# wrap everything in a vbox to add some padding
+	$self->SetSizerAndFit($sizer);
+	$sizer->SetSizeHints($self);
 }
 
 #
@@ -111,12 +105,12 @@ sub _create {
 # no params. no return values.
 #
 sub _create_buttons {
-    my ($self) = @_;
-    my $sizer  = $self->_sizer;
+	my ($self) = @_;
+	my $sizer = $self->_sizer;
 
-    my $butsizer = $self->CreateStdDialogButtonSizer(Wx::wxOK|Wx::wxCANCEL);
-    $sizer->Add($butsizer, 0, Wx::wxALL|Wx::wxEXPAND|Wx::wxALIGN_CENTER, 5 );
-    Wx::Event::EVT_BUTTON( $self, Wx::wxID_OK, \&_on_butok_clicked );
+	my $butsizer = $self->CreateStdDialogButtonSizer( Wx::wxOK | Wx::wxCANCEL );
+	$sizer->Add( $butsizer, 0, Wx::wxALL | Wx::wxEXPAND | Wx::wxALIGN_CENTER, 5 );
+	Wx::Event::EVT_BUTTON( $self, Wx::wxID_OK, \&_on_butok_clicked );
 }
 
 #
@@ -127,50 +121,52 @@ sub _create_buttons {
 # no params. no return values.
 #
 sub _create_dictionaries {
-    my ($self) = @_;
+	my ($self) = @_;
 
-    my $engine  = Padre::Plugin::SpellCheck::Engine->new($self->_plugin);
-    my @choices = $engine->dictionaries;
-    my %choices = map { $_ => 1 } @choices;
-    my $deflang = $self->_plugin->config->{dictionary};
-    my $default = exists $choices{$deflang} ? $deflang : $choices[0];
+	my $engine  = Padre::Plugin::SpellCheck::Engine->new( $self->_plugin );
+	my @choices = $engine->dictionaries;
+	my %choices = map { $_ => 1 } @choices;
+	my $deflang = $self->_plugin->config->{dictionary};
+	my $default = exists $choices{$deflang} ? $deflang : $choices[0];
 
-    # create the controls
-    my $label = Wx::StaticText->new( $self, -1, _T('Dictionary:') );
-    my $combo = Wx::ComboBox->new( $self, -1,
-        $default,
-        Wx::wxDefaultPosition,
-        Wx::wxDefaultSize,
-        \@choices,
-        Wx::wxCB_READONLY|Wx::wxCB_SORT,
-    );
-    $self->_dict_combo( $combo );
+	# create the controls
+	my $label = Wx::StaticText->new( $self, -1, _T('Dictionary:') );
+	my $combo = Wx::ComboBox->new(
+		$self, -1,
+		$default,
+		Wx::wxDefaultPosition,
+		Wx::wxDefaultSize,
+		\@choices,
+		Wx::wxCB_READONLY | Wx::wxCB_SORT,
+	);
+	$self->_dict_combo($combo);
 
-    # pack the controls in a box
-    my $box = Wx::BoxSizer->new(Wx::wxHORIZONTAL);
-    $box->Add( $label, 0, Wx::wxALL|Wx::wxEXPAND|Wx::wxALIGN_CENTER, 5 );
-    $box->Add( $combo, 1, Wx::wxALL|Wx::wxEXPAND|Wx::wxALIGN_CENTER, 5 );
-    $self->_sizer->Add( $box, 0, Wx::wxALL|Wx::wxEXPAND|Wx::wxALIGN_CENTER, 5 );
+	# pack the controls in a box
+	my $box = Wx::BoxSizer->new(Wx::wxHORIZONTAL);
+	$box->Add( $label, 0, Wx::wxALL | Wx::wxEXPAND | Wx::wxALIGN_CENTER, 5 );
+	$box->Add( $combo, 1, Wx::wxALL | Wx::wxEXPAND | Wx::wxALIGN_CENTER, 5 );
+	$self->_sizer->Add( $box, 0, Wx::wxALL | Wx::wxEXPAND | Wx::wxALIGN_CENTER, 5 );
 }
 
 
 1;
 
-__END__
 
+
+=pod
 
 =head1 NAME
 
-Padre::Plugin::SpellCheck::Preferences - preferences dialog for padre spell check
+Padre::Plugin::SpellCheck::Preferences - Preferences dialog for padre spell check
 
+=head1 VERSION
 
+version 1.1.3
 
 =head1 DESCRIPTION
 
 This module implements the dialog window that will be used to set the
 spell check preferences.
-
-
 
 =head1 PUBLIC METHODS
 
@@ -182,30 +178,40 @@ spell check preferences.
 
 Create and return a new dialog window.
 
-
 =back
-
-
-
 
 =head1 SEE ALSO
 
 For all related information (bug reporting, source code repository,
 etc.), refer to L<Padre::Plugin::SpellCheck>.
 
+=head1 AUTHORS
 
+=over 4
 
-=head1 AUTHOR
+=item *
 
-Jerome Quelin, C<< <jquelin@cpan.org> >>
+Fayland Lam <fayland at gmail.com>
 
+=item *
 
+Jerome Quelin <jquelin@gmail.com>
 
-=head1 COPYRIGHT & LICENSE
+=item *
 
-Copyright (c) 2009 Jerome Quelin, all rights reserved.
+Ahmad M. Zawawi <ahmad.zawawi@gmail.com>
 
-This program is free software; you can redistribute it and/or modify
-it under the same terms as Perl itself.
+=back
+
+=head1 COPYRIGHT AND LICENSE
+
+This software is copyright (c) 2010 by Fayland Lam, Jerome Quelin.
+
+This is free software; you can redistribute it and/or modify it under
+the same terms as the Perl 5 programming language system itself.
 
 =cut
+
+
+__END__
+

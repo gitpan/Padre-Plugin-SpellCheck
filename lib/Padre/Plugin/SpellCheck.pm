@@ -1,150 +1,128 @@
-#
-# This file is part of Padre::Plugin::SpellCheck.
-# Copyright (c) 2009 Jerome Quelin, all rights reserved.
-#
-# This program is free software; you can redistribute it and/or modify
-# it under the same terms as Perl itself.
-#
-#
-
 package Padre::Plugin::SpellCheck;
+BEGIN {
+  $Padre::Plugin::SpellCheck::VERSION = '1.1.3';
+}
+
+# ABSTRACT: Check spelling in Padre
 
 use warnings;
 use strict;
 
-use File::Basename        qw{ fileparse };
+use File::Basename qw{ fileparse };
 use File::Spec::Functions qw{ catdir catfile };
-use Module::Util          qw{ find_installed };
-
-our $VERSION = '1.1.2';
+use Module::Util qw{ find_installed };
 
 use base 'Padre::Plugin';
 use Padre::Current;
 use Padre::Plugin::SpellCheck::Dialog;
 use Padre::Plugin::SpellCheck::Engine;
 use Padre::Plugin::SpellCheck::Preferences;
-use Padre::Util           ('_T');
 
 
 # -- padre plugin api, refer to Padre::Plugin
 
 # plugin name
-sub plugin_name { _T('Spell check') }
+sub plugin_name { Wx::gettext('Spell check') }
 
 # plugin icon
 sub plugin_icon {
-    # find resource path
-    my $pkgpath = find_installed(__PACKAGE__);
-    my (undef, $dirname, undef) = fileparse($pkgpath);
-    my $iconpath = catfile( _sharedir(), 'icons', 'spellcheck.png');
+	my $self = shift;
 
-    # create and return icon
-    return Wx::Bitmap->new( $iconpath, Wx::wxBITMAP_TYPE_PNG );
-}
+	# find resource path
+	my $pkgpath = find_installed(__PACKAGE__);
+	my ( undef, $dirname, undef ) = fileparse($pkgpath);
+	my $iconpath = catfile( $self->plugin_directory_share, 'icons', 'spellcheck.png' );
 
-# directory where to find the translations
-sub plugin_locale_directory {
-    return catdir( _sharedir(), 'locale' );
+	# create and return icon
+	return Wx::Bitmap->new( $iconpath, Wx::wxBITMAP_TYPE_PNG );
 }
 
 # padre interfaces
 sub padre_interfaces {
-    'Padre::Plugin' => '0.26',
+	'Padre::Plugin' => '0.43',;
 }
 
 # plugin menu.
 sub menu_plugins_simple {
-    _T('Spell check') => [
-        _T("Check spelling\tF7") => 'spell_check',
-        _T("Preferences")        => 'spell_preferences',
-    ];
+	Wx::gettext('Spell check') => [
+		Wx::gettext("Check spelling\tF7") => 'spell_check',
+		Wx::gettext("Preferences")        => 'spell_preferences',
+	];
 }
 
 
 # -- public methods
 
 sub config {
-    my ($self) = @_;
-    my $config = {
-        dictionary => 'en_US',
-    };
-    return $self->config_read || $config;
+	my ($self) = @_;
+	my $config = {
+		dictionary => 'en_US',
+	};
+	return $self->config_read || $config;
 }
 
 sub spell_check {
-    my ($self) = @_;
-    my $main   = Padre::Current->main;
+	my ($self) = @_;
+	my $main = Padre::Current->main;
 
-    # TODO: maybe grey out the menu option if
-    # no file is opened?
-    unless ($main->current->document) {
-        $main->message( _T( 'No document opened.' ), 'Padre' );
-	    return;
-    }
-    
-    my $engine = Padre::Plugin::SpellCheck::Engine->new($self);
+	# TODO: maybe grey out the menu option if
+	# no file is opened?
+	unless ( $main->current->document ) {
+		$main->message( Wx::gettext('No document opened.'), 'Padre' );
+		return;
+	}
 
-    # fetch text to check
-    my $selection = Padre::Current->text;
-    my $wholetext = Padre::Current->document->text_get;
-    my $text   = $selection || $wholetext;
-    my $offset = $selection ? Padre::Current->editor->GetSelectionStart : 0;
+	my $engine = Padre::Plugin::SpellCheck::Engine->new($self);
 
-    # try to find a mistake
-    my ($word, $pos) = $engine->check( $text );
+	# fetch text to check
+	my $selection = Padre::Current->text;
+	my $wholetext = Padre::Current->document->text_get;
+	my $text      = $selection || $wholetext;
+	my $offset    = $selection ? Padre::Current->editor->GetSelectionStart : 0;
 
-    # no mistake means we're done
-    if ( not defined $word ) {
-        $main->message( _T( 'Spell check finished.' ), 'Padre' );
-        return;
-    }
+	# try to find a mistake
+	my ( $word, $pos ) = $engine->check($text);
 
-    my $dialog = Padre::Plugin::SpellCheck::Dialog->new(
-        text   => $text,
-        error  => [ $word, $pos ],
-        engine => $engine,
-        offset => $offset,
-        plugin => $self,
-    );
-    $dialog->ShowModal;
+	# no mistake means we're done
+	if ( not defined $word ) {
+		$main->message( Wx::gettext('Spell check finished.'), 'Padre' );
+		return;
+	}
+
+	my $dialog = Padre::Plugin::SpellCheck::Dialog->new(
+		text   => $text,
+		error  => [ $word, $pos ],
+		engine => $engine,
+		offset => $offset,
+		plugin => $self,
+	);
+	$dialog->ShowModal;
 }
 
 sub spell_preferences {
-    my ($self) = @_;
-    my $prefs  = Padre::Plugin::SpellCheck::Preferences->new($self);
-    $prefs->Show;
+	my ($self) = @_;
+	my $prefs = Padre::Plugin::SpellCheck::Preferences->new($self);
+	$prefs->Show;
 }
 
-
-# -- private methods
-
-#
-# my $dir = $self->_sharedir;
-#
-# return the private share directory where the module resources are stored.
-#
-sub _sharedir {
-    # find resource path
-    my $pkgpath = find_installed(__PACKAGE__);
-    my (undef, $dirname, undef) = fileparse($pkgpath);
-    return catdir( $dirname, 'SpellCheck', 'share' );
-}
 
 1;
-__END__
+
+
+=pod
 
 =head1 NAME
 
-Padre::Plugin::SpellCheck - check spelling in Padre
+Padre::Plugin::SpellCheck - Check spelling in Padre
 
+=head1 VERSION
 
+version 1.1.3
 
 =head1 SYNOPSIS
 
     $ padre file-with-spell-errors
     F7
-
-
 
 =head1 DESCRIPTION
 
@@ -157,8 +135,6 @@ This plugin is using C<Text::Aspell> underneath, so check this module's
 pod for more information.
 
 Of course, you need to have the aspell binary and dictionnary installed.
-
-
 
 =head1 PUBLIC METHODS
 
@@ -178,12 +154,9 @@ The following methods are implemented:
 
 =item plugin_icon()
 
-=item plugin_locale_directory()
-
 =item plugin_name()
 
 =back
-
 
 =head2 Spell checking methods
 
@@ -204,8 +177,6 @@ Open the check spelling preferences window.
 
 =back
 
-
-
 =head1 BUGS
 
 Spell-checking non-ascii files has bugs: the selection does not
@@ -220,8 +191,6 @@ at rt.cpan.org>, or through the web interface at L<http://rt.cpan.org/NoAuth/Rep
 SpellCheck>. I will be notified, and then you'll automatically be
 notified of progress on your bug as I make changes.
 
-
-
 =head1 SEE ALSO
 
 Plugin icon courtesy of Mark James, at
@@ -230,7 +199,6 @@ L<http://www.famfamfam.com/lab/icons/silk/>.
 Our svn repository is located at L<http://svn.perlide.org/padre/trunk/Padre-Plugin-
 SpellCheck>, and can be browsed at L<http://padre.perlide.org/browser/trunk/Padre-Plugin-
 SpellCheck>.
-
 
 You can also look for information on this module at:
 
@@ -250,26 +218,35 @@ L<http://rt.cpan.org/NoAuth/Bugs.html?Dist=Padre-Plugin-SpellCheck>
 
 =back
 
-
 Everything aspell related: L<http://aspell.net>.
 
+=head1 AUTHORS
 
+=over 4
 
-=head1 AUTHOR
+=item *
 
-Jerome Quelin, C<< <jquelin@cpan.org> >>
+Fayland Lam <fayland at gmail.com>
 
-Original version from Fayland Lam, C<< <fayland at gmail.com> >>
+=item *
 
+Jerome Quelin <jquelin@gmail.com>
 
+=item *
 
-=head1 COPYRIGHT & LICENSE
+Ahmad M. Zawawi <ahmad.zawawi@gmail.com>
 
-Copyright (c) 2009 Fayland Lam, all rights reserved.
+=back
 
-Copyright (c) 2009 Jerome Quelin, all rights reserved.
+=head1 COPYRIGHT AND LICENSE
 
-This program is free software; you can redistribute it and/or modify
-it under the same terms as Perl itself.
+This software is copyright (c) 2010 by Fayland Lam, Jerome Quelin.
+
+This is free software; you can redistribute it and/or modify it under
+the same terms as the Perl 5 programming language system itself.
 
 =cut
+
+
+__END__
+
