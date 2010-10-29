@@ -1,6 +1,6 @@
 package Padre::Plugin::SpellCheck::Engine;
 BEGIN {
-  $Padre::Plugin::SpellCheck::Engine::VERSION = '1.1.3';
+  $Padre::Plugin::SpellCheck::Engine::VERSION = '1.2';
 }
 
 # ABSTRACT: Spell check engine for the plugin
@@ -132,7 +132,7 @@ Padre::Plugin::SpellCheck::Engine - Spell check engine for the plugin
 
 =head1 VERSION
 
-version 1.1.3
+version 1.2
 
 =head1 PUBLIC METHODS
 

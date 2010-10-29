@@ -21,7 +21,7 @@ my %module_build_args = (
     'Ahmad M. Zawawi <ahmad.zawawi@gmail.com>'
   ],
   'dist_name' => 'Padre-Plugin-SpellCheck',
-  'dist_version' => '1.1.3',
+  'dist_version' => '1.2',
   'license' => 'perl',
   'module_name' => 'Padre::Plugin::SpellCheck',
   'recommends' => {},

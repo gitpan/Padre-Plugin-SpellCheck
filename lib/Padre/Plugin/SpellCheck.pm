@@ -1,6 +1,6 @@
 package Padre::Plugin::SpellCheck;
 BEGIN {
-  $Padre::Plugin::SpellCheck::VERSION = '1.1.3';
+  $Padre::Plugin::SpellCheck::VERSION = '1.2';
 }
 
 # ABSTRACT: Check spelling in Padre
@@ -117,7 +117,7 @@ Padre::Plugin::SpellCheck - Check spelling in Padre
 
 =head1 VERSION
 
-version 1.1.3
+version 1.2
 
 =head1 SYNOPSIS
 
