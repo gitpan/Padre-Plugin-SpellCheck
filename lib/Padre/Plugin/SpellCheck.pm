@@ -1,6 +1,6 @@
 package Padre::Plugin::SpellCheck;
 BEGIN {
-  $Padre::Plugin::SpellCheck::VERSION = '1.2';
+  $Padre::Plugin::SpellCheck::VERSION = '1.21';
 }
 
 # ABSTRACT: Check spelling in Padre
@@ -46,7 +46,7 @@ sub padre_interfaces {
 sub menu_plugins_simple {
 	Wx::gettext('Spell check') => [
 		Wx::gettext("Check spelling\tF7") => 'spell_check',
-		Wx::gettext("Preferences")        => 'spell_preferences',
+		Wx::gettext('Preferences')        => 'plugin_preferences',
 	];
 }
 
@@ -72,7 +72,8 @@ sub spell_check {
 		return;
 	}
 
-	my $engine = Padre::Plugin::SpellCheck::Engine->new($self);
+	my $mime_type = $main->current->document->mimetype;
+	my $engine = Padre::Plugin::SpellCheck::Engine->new($self, $mime_type);
 
 	# fetch text to check
 	my $selection = Padre::Current->text;
@@ -99,7 +100,7 @@ sub spell_check {
 	$dialog->ShowModal;
 }
 
-sub spell_preferences {
+sub plugin_preferences {
 	my ($self) = @_;
 	my $prefs = Padre::Plugin::SpellCheck::Preferences->new($self);
 	$prefs->Show;
@@ -117,7 +118,7 @@ Padre::Plugin::SpellCheck - Check spelling in Padre
 
 =head1 VERSION
 
-version 1.2
+version 1.21
 
 =head1 SYNOPSIS
 
@@ -171,7 +172,7 @@ exist previously.
 
 Spell checks the current selection (or the whole document).
 
-=item * spell_preferences()
+=item * plugin_preferences()
 
 Open the check spelling preferences window.
 

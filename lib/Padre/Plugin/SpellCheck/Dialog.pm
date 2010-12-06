@@ -1,6 +1,6 @@
 package Padre::Plugin::SpellCheck::Dialog;
 BEGIN {
-  $Padre::Plugin::SpellCheck::Dialog::VERSION = '1.2';
+  $Padre::Plugin::SpellCheck::Dialog::VERSION = '1.21';
 }
 
 # ABSTRACT: Spell check dialog for Padre
@@ -399,7 +399,7 @@ Padre::Plugin::SpellCheck::Dialog - Spell check dialog for Padre
 
 =head1 VERSION
 
-version 1.2
+version 1.21
 
 =head1 DESCRIPTION
 

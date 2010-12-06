@@ -1,6 +1,6 @@
 package Padre::Plugin::SpellCheck::Preferences;
 BEGIN {
-  $Padre::Plugin::SpellCheck::Preferences::VERSION = '1.2';
+  $Padre::Plugin::SpellCheck::Preferences::VERSION = '1.21';
 }
 
 # ABSTRACT: Preferences dialog for padre spell check
@@ -161,7 +161,7 @@ Padre::Plugin::SpellCheck::Preferences - Preferences dialog for padre spell chec
 
 =head1 VERSION
 
-version 1.2
+version 1.21
 
 =head1 DESCRIPTION
 
