@@ -1,141 +1,199 @@
 package Padre::Plugin::SpellCheck;
-BEGIN {
-  $Padre::Plugin::SpellCheck::VERSION = '1.21';
+
+use 5.008005;
+use strict;
+use warnings;
+
+use Padre::Plugin;
+use Padre::Unload ();
+
+our $VERSION = '1.22';
+our @ISA     = 'Padre::Plugin';
+
+
+#######
+# Define Plugin Name Spell Checker
+#######
+sub plugin_name {
+	return Wx::gettext('Spell Checker');
 }
 
-# ABSTRACT: Check spelling in Padre
+#######
+# Define Padre Interfaces required
+#######
+sub padre_interfaces {
+	return (
+		'Padre::Plugin' => '0.94',
+		'Padre::Unload' => '0.94',
+		'Padre::Locale' => '0.94',
 
-use warnings;
-use strict;
+		# used by my sub packages
+		'Padre::Logger'         => '0.94',
+		'Padre::Wx'             => '0.94',
+		'Padre::Wx::Role::Main' => '0.94',
+		'Padre::Util'           => '0.94',
 
-use File::Basename qw{ fileparse };
-use File::Spec::Functions qw{ catdir catfile };
-use Module::Util qw{ find_installed };
+	);
+}
 
-use base 'Padre::Plugin';
-use Padre::Current;
-use Padre::Plugin::SpellCheck::Dialog;
-use Padre::Plugin::SpellCheck::Engine;
-use Padre::Plugin::SpellCheck::Preferences;
+#######
+# plugin menu
+#######
+sub menu_plugins {
+	my $self = shift;
+	my $main = $self->main;
 
+	# Create a manual menu item
+	my $item = Wx::MenuItem->new( undef, -1, $self->plugin_name . "...\tF7 ", );
+	Wx::Event::EVT_MENU(
+		$main, $item,
+		sub {
+			local $@;
+			eval { $self->spell_check($main); };
+		},
+	);
 
-# -- padre plugin api, refer to Padre::Plugin
+	return $item;
+}
 
-# plugin name
-sub plugin_name { Wx::gettext('Spell check') }
+#########
+# We need plugin_enable
+# as we have an external dependency
+#########
+sub plugin_enable {
 
-# plugin icon
-sub plugin_icon {
+	my $local_dictonary_bin_exists = 0;
+
+	# Tests for external file in Path...
+	if ( File::Which::which('aspell') ) {
+		$local_dictonary_bin_exists = 1;
+	} elsif ( File::Which::which('hunspell') ) {
+		$local_dictonary_bin_exists = 1;
+	}
+	return $local_dictonary_bin_exists;
+}
+
+########
+# plugin_disable
+########
+sub plugin_disable {
 	my $self = shift;
 
-	# find resource path
-	my $pkgpath = find_installed(__PACKAGE__);
-	my ( undef, $dirname, undef ) = fileparse($pkgpath);
-	my $iconpath = catfile( $self->plugin_directory_share, 'icons', 'spellcheck.png' );
+	# Close the dialog if it is hanging around
+	$self->clean_dialog;
 
-	# create and return icon
-	return Wx::Bitmap->new( $iconpath, Wx::wxBITMAP_TYPE_PNG );
-}
+	# Unload all our child classes
 
-# padre interfaces
-sub padre_interfaces {
-	'Padre::Plugin' => '0.43',;
-}
-
-# plugin menu.
-sub menu_plugins_simple {
-	Wx::gettext('Spell check') => [
-		Wx::gettext("Check spelling\tF7") => 'spell_check',
-		Wx::gettext('Preferences')        => 'plugin_preferences',
-	];
-}
-
-
-# -- public methods
-
-sub config {
-	my ($self) = @_;
-	my $config = {
-		dictionary => 'en_US',
-	};
-	return $self->config_read || $config;
-}
-
-sub spell_check {
-	my ($self) = @_;
-	my $main = Padre::Current->main;
-
-	# TODO: maybe grey out the menu option if
-	# no file is opened?
-	unless ( $main->current->document ) {
-		$main->message( Wx::gettext('No document opened.'), 'Padre' );
-		return;
-	}
-
-	my $mime_type = $main->current->document->mimetype;
-	my $engine = Padre::Plugin::SpellCheck::Engine->new($self, $mime_type);
-
-	# fetch text to check
-	my $selection = Padre::Current->text;
-	my $wholetext = Padre::Current->document->text_get;
-	my $text      = $selection || $wholetext;
-	my $offset    = $selection ? Padre::Current->editor->GetSelectionStart : 0;
-
-	# try to find a mistake
-	my ( $word, $pos ) = $engine->check($text);
-
-	# no mistake means we're done
-	if ( not defined $word ) {
-		$main->message( Wx::gettext('Spell check finished.'), 'Padre' );
-		return;
-	}
-
-	my $dialog = Padre::Plugin::SpellCheck::Dialog->new(
-		text   => $text,
-		error  => [ $word, $pos ],
-		engine => $engine,
-		offset => $offset,
-		plugin => $self,
+	require Padre::Unload;
+	Padre::Unload->unload(
+		qw{
+			Padre::Plugin::SpellCheck
+			Padre::Plugin::SpellCheck::Checker
+			Padre::Plugin::SpellCheck::FBP::Checker
+			Padre::Plugin::SpellCheck::Engine
+			Padre::Plugin::SpellCheck::Preferences
+			Padre::Plugin::SpellCheck::FBP::Preferences
+			Text::Aspell
+			}
 	);
-	$dialog->ShowModal;
+
+	$self->SUPER::plugin_disable(@_);
+
+	return 1;
 }
 
+########
+# Composed Method clean_dialog
+########
+sub clean_dialog {
+	my $self = shift;
+
+	# Close the main dialog if it is hanging around
+	if ( $self->{dialog} ) {
+		$self->{dialog}->Hide;
+		$self->{dialog}->Destroy;
+		delete $self->{dialog};
+	}
+
+	return 1;
+}
+
+
+#######
+# plugin_preferences
+#######
 sub plugin_preferences {
-	my ($self) = @_;
-	my $prefs = Padre::Plugin::SpellCheck::Preferences->new($self);
-	$prefs->Show;
+	my $self = shift;
+
+	# Clean up any previous existing dialog
+	$self->clean_dialog;
+
+	require Padre::Plugin::SpellCheck::Preferences;
+	$self->{dialog} = Padre::Plugin::SpellCheck::Preferences->new($self);
+	$self->{dialog}->ShowModal;
+
+	return;
 }
 
+#######
+# spell_check
+#######
+sub spell_check {
+	my $self = shift;
+
+	# Clean up any previous existing dialog
+	$self->clean_dialog;
+
+	require Padre::Plugin::SpellCheck::Checker;
+	$self->{dialog} = Padre::Plugin::SpellCheck::Checker->new($self);
+	$self->{dialog}->Show;
+
+	return;
+}
 
 1;
 
+__END__
 
-=pod
+# DO NOT REMOVE
+#######
+# Add icon to Plugin
+#######
+sub plugin_icon {
+		my $self = shift;
+
+		# find resource path
+		my $iconpath = catfile( $self->plugin_directory_share, 'icons', 'spellcheck.png' );
+
+		# create and return icon
+		return Wx::Bitmap->new( $iconpath, Wx::wxBITMAP_TYPE_PNG );
+}
+
+
 
 =head1 NAME
 
-Padre::Plugin::SpellCheck - Check spelling in Padre
+Padre::Plugin::SpellCheck - Check spelling in Padre The Perl IDE
 
-=head1 VERSION
+=head1 DESCRIPTION
 
-version 1.21
+This plugins allows one to check there text spelling within Padre using
+C<F7> (standard spelling shortcut across text processors). 
+
+One can change the dictionary language used (based upon install languages) in the preferences window via Plug-in Manager. 
+Preferences are persistent. You need to Save your preferred language.
+
+This plugin is using C<Text::Aspell> default at present, You can also use C<Text::Hunspell> under-development, so check these module's
+pod for more information.
+
+Of course, you need to have the relevant Dictionary binary, dev and dictionary installed.
+
 
 =head1 SYNOPSIS
 
     $ padre file-with-spell-errors
     F7
 
-=head1 DESCRIPTION
-
-This plugins allows one to checking her text spelling within Padre using
-C<F7> (standard spelling shortcut accross text processors). One can change
-the dictionary language used in the preferences window (menu Plugins /
-SpellCheck / Preferences).
-
-This plugin is using C<Text::Aspell> underneath, so check this module's
-pod for more information.
-
-Of course, you need to have the aspell binary and dictionnary installed.
 
 =head1 PUBLIC METHODS
 
@@ -158,6 +216,7 @@ The following methods are implemented:
 =item plugin_name()
 
 =back
+
 
 =head2 Spell checking methods
 
@@ -192,6 +251,9 @@ at rt.cpan.org>, or through the web interface at L<http://rt.cpan.org/NoAuth/Rep
 SpellCheck>. I will be notified, and then you'll automatically be
 notified of progress on your bug as I make changes.
 
+
+
+
 =head1 SEE ALSO
 
 Plugin icon courtesy of Mark James, at
@@ -200,6 +262,7 @@ L<http://www.famfamfam.com/lab/icons/silk/>.
 Our svn repository is located at L<http://svn.perlide.org/padre/trunk/Padre-Plugin-
 SpellCheck>, and can be browsed at L<http://padre.perlide.org/browser/trunk/Padre-Plugin-
 SpellCheck>.
+
 
 You can also look for information on this module at:
 
@@ -223,31 +286,21 @@ Everything aspell related: L<http://aspell.net>.
 
 =head1 AUTHORS
 
-=over 4
+Kevin Dawson E<lt>bowtie@cpan.orgE<gt>
 
-=item *
+Ahmad M. Zawawi E<lt>ahmad.zawawi@gmail.comE<gt>
 
-Fayland Lam <fayland at gmail.com>
+Fayland Lam E<lt>fayland at gmail.comE<gt>
 
-=item *
+Jerome Quelin E<lt>jquelin@gmail.comE<gt>
 
-Jerome Quelin <jquelin@gmail.com>
 
-=item *
-
-Ahmad M. Zawawi <ahmad.zawawi@gmail.com>
-
-=back
-
-=head1 COPYRIGHT AND LICENSE
+=head1 COPYRIGHT
 
 This software is copyright (c) 2010 by Fayland Lam, Jerome Quelin.
 
-This is free software; you can redistribute it and/or modify it under
-the same terms as the Perl 5 programming language system itself.
+=head1 LICENSE
 
+This program is free software; you can redistribute it and/or
+modify it under the same terms as Perl 5 itself.
 =cut
-
-
-__END__
-

@@ -1,172 +1,263 @@
 package Padre::Plugin::SpellCheck::Preferences;
-BEGIN {
-  $Padre::Plugin::SpellCheck::Preferences::VERSION = '1.21';
-}
-
-# ABSTRACT: Preferences dialog for padre spell check
 
 use warnings;
 use strict;
 
-use Class::XSAccessor accessors => {
-	_dict_combo => '_dict_combo', # combo box holding dictionary
-	_plugin     => '_plugin',     # plugin to be configured
-	_sizer      => '_sizer',      # window sizer
+#TODO check logger against Plug-in Manager! for adamk
+use Padre::Logger;
+use Padre::Util                                 ();
+use Padre::Locale                               ();
+use Padre::Unload                               ();
+use Padre::Plugin::SpellCheck::FBP::Preferences ();
+
+our $VERSION = '1.22';
+our @ISA     = qw{
+	Padre::Plugin::SpellCheck::FBP::Preferences
 };
 
-use Padre::Current;
-use Padre::Wx   ();
-use Padre::Util ('_T');
 
-use base 'Wx::Dialog';
-
-
-# -- constructor
-
+#######
+# Method new
+#######
 sub new {
-	my ( $class, $plugin ) = @_;
+	my $class   = shift;
+	my $_parent = shift; # parent $self
 
-	# create object
-	my $self = $class->SUPER::new(
-		Padre::Current->main,
-		-1,
-		_T('Spelling preferences'),
-		Wx::wxDefaultPosition,
-		Wx::wxDefaultSize,
-		Wx::wxDEFAULT_FRAME_STYLE | Wx::wxTAB_TRAVERSAL,
-	);
-	$self->SetIcon( Wx::GetWxPerlIcon() );
-	$self->_plugin($plugin);
+	# Create the dialog
+	my $self = $class->SUPER::new( $_parent->main );
 
-	# create dialog
-	$self->_create;
+	$self->{_parent} = $_parent;
+
+	# define where to display main dialog
+	$self->CenterOnParent;
+
+	$self->set_up;
 
 	return $self;
 }
 
+#######
+# Method set_up
+#######
+sub set_up {
+	my $self = shift;
 
-# -- event handler
+	$self->{dictionary} = 'Aspell';
 
-#
-# $self->_on_butok_clicked;
-#
-# handler called when the ok button has been clicked.
-#
-sub _on_butok_clicked {
-	my ($self) = @_;
-	my $plugin = $self->_plugin;
+	# use Aspell as default, as the aspell engine works
+	$self->_local_aspell_dictionaries;
 
-	# read plugin preferences
-	my $prefs = $plugin->config;
+	# $self->_local_hunspell_dictionaries;
 
-	# overwrite dictionary preference
-	my $dic = $self->_dict_combo->GetValue;
-	$prefs->{dictionary} = $dic;
+	# update dialog with locally install dictionaries;
+	$self->display_dictionaries;
 
-	# store plugin preferences
-	$plugin->config_write($prefs);
-	$self->Destroy;
+	# Tidy up config DB if earler version
+	my $config = $self->{_parent}->config_read;
+	if ( eval { $config->{Version} < 1.22 } ) {
+		$self->{_parent}->config_write( {} );
+		$config = $self->{_parent}->config_read;
+		$config->{Version} = $VERSION;
+		$self->{_parent}->config_write($config);
+	}
+
+	return;
 }
 
+#######
+# Method _local_aspell_dictionaries
+#######
+sub _local_aspell_dictionaries {
+	my $self = shift;
 
-# -- private methods
+	my @local_dictionaries_names = ();
 
-#
-# $self->_create;
-#
-# create the dialog itself.
-#
-# no params, no return values.
-#
-sub _create {
-	my ($self) = @_;
+	eval { require Text::Aspell; };
+	if ($@) {
+		$self->{local_dictionaries_names} = \@local_dictionaries_names;
+		print "Text::Aspell is not installed\n";
+		return;
+	} else {
+		my $speller = Text::Aspell->new;
 
-	# create sizer that will host all controls
-	my $sizer = Wx::BoxSizer->new(Wx::wxVERTICAL);
-	$self->_sizer($sizer);
+		my @local_dictionaries = grep { $_ =~ /^\w+$/ } map { $_->{name} } $speller->dictionary_info;
+		$self->{local_dictionaries} = \@local_dictionaries;
+		TRACE("locally installed dictionaries found = $self->{local_dictionaries}") if DEBUG;
+		TRACE("iso to dictionary names = $self->{dictionary_names}")                if DEBUG;
 
-	# create the controls
-	$self->_create_dictionaries;
-	$self->_create_buttons;
+		#TODO compose method local iso to padre names
+		for (@local_dictionaries) {
+			push( @local_dictionaries_names, $self->padre_locale_label($_) );
+			$self->{dictionary_names}{$_} = $self->padre_locale_label($_);
+		}
 
-	# setting focus on dictionary first
-	$self->_dict_combo->SetFocus;
+		@local_dictionaries_names = sort @local_dictionaries_names;
+		$self->{local_dictionaries_names} = \@local_dictionaries_names;
 
-	# wrap everything in a vbox to add some padding
-	$self->SetSizerAndFit($sizer);
-	$sizer->SetSizeHints($self);
+		TRACE("local dictionaries names = $self->{local_dictionaries_names}") if DEBUG;
+		return;
+	}
 }
 
-#
-# $dialog->_create_buttons;
-#
-# create the buttons pane.
-#
-# no params. no return values.
-#
-sub _create_buttons {
-	my ($self) = @_;
-	my $sizer = $self->_sizer;
+#######
+# Method _local_aspell_dictionaries
+#######
+sub _local_hunspell_dictionaries {
+	my $self = shift;
 
-	my $butsizer = $self->CreateStdDialogButtonSizer( Wx::wxOK | Wx::wxCANCEL );
-	$sizer->Add( $butsizer, 0, Wx::wxALL | Wx::wxEXPAND | Wx::wxALIGN_CENTER, 5 );
-	Wx::Event::EVT_BUTTON( $self, Wx::wxID_OK, \&_on_butok_clicked );
+	my @local_dictionaries_names;
+	my @local_dictionaries;
+	eval { require Text::Hunspell; };
+	if ($@) {
+		$self->{local_dictionaries_names} = \@local_dictionaries_names;
+		print "Text::Hunspell is not installed\n";
+
+		return;
+	} else {
+
+		require Padre::Util;
+		my $speller = Padre::Util::run_in_directory_two('hunspell -D </dev/null');
+		chomp $speller;
+
+		#TODO this is yuck must do better
+		my @speller_raw = grep { $_ =~ /\w{2}_\w{2}$/m } split /\n/, $$speller;
+
+		my %temp_speller;
+		foreach (@speller_raw) {
+			if ( $_ !~ m/hyph/ ) {
+				m/(\w{2}_\w{2})$/;
+				my $tmp = $1;
+
+				$temp_speller{$tmp}++;
+			}
+		}
+
+		my @speller;
+		while ( my ( $key, $value ) = each %temp_speller ) {
+			push @local_dictionaries, $key;
+		}
+
+		$self->{local_dictionaries} = \@local_dictionaries;
+		TRACE("locally installed dictionaries found = $self->{local_dictionaries}") if DEBUG;
+		TRACE("iso to dictionary names = $self->{dictionary_names}")                if DEBUG;
+
+		for (@local_dictionaries) {
+			push( @local_dictionaries_names, $self->padre_locale_label($_) );
+			$self->{dictionary_names}{$_} = $self->padre_locale_label($_);
+		}
+
+		@local_dictionaries_names = sort @local_dictionaries_names;
+		$self->{local_dictionaries_names} = \@local_dictionaries_names;
+		TRACE("local dictionaries names = $self->{local_dictionaries_names}") if DEBUG;
+		return;
+	}
 }
 
-#
-# $dialog->_create_dictionaries;
-#
-# create the pane to choose the spelling dictionary.
-#
-# no params. no return values.
-#
-sub _create_dictionaries {
-	my ($self) = @_;
+#######
+# Method display_dictionaries
+#######
+sub display_dictionaries {
+	my $self = shift;
+	my $main = $self->main;
 
-	my $engine  = Padre::Plugin::SpellCheck::Engine->new( $self->_plugin );
-	my @choices = $engine->dictionaries;
-	my %choices = map { $_ => 1 } @choices;
-	my $deflang = $self->_plugin->config->{dictionary};
-	my $default = exists $choices{$deflang} ? $deflang : $choices[0];
+	my $prefered_dictionary = $self->{_parent}->config_read->{ $self->{dictionary} };
 
-	# create the controls
-	my $label = Wx::StaticText->new( $self, -1, _T('Dictionary:') );
-	my $combo = Wx::ComboBox->new(
-		$self, -1,
-		$default,
-		Wx::wxDefaultPosition,
-		Wx::wxDefaultSize,
-		\@choices,
-		Wx::wxCB_READONLY | Wx::wxCB_SORT,
-	);
-	$self->_dict_combo($combo);
+	TRACE("iso prefered_dictionary = $prefered_dictionary ") if DEBUG;
 
-	# pack the controls in a box
-	my $box = Wx::BoxSizer->new(Wx::wxHORIZONTAL);
-	$box->Add( $label, 0, Wx::wxALL | Wx::wxEXPAND | Wx::wxALIGN_CENTER, 5 );
-	$box->Add( $combo, 1, Wx::wxALL | Wx::wxEXPAND | Wx::wxALIGN_CENTER, 5 );
-	$self->_sizer->Add( $box, 0, Wx::wxALL | Wx::wxEXPAND | Wx::wxALIGN_CENTER, 5 );
+	# set local_dictionaries_index to zero in case prefered_dictionary not found
+	my $local_dictionaries_index = 0;
+	require Padre::Locale;
+	for ( 0 .. $#{ $self->{local_dictionaries_names} } ) {
+		if ( $self->{local_dictionaries_names}->[$_] eq $self->padre_locale_label($prefered_dictionary) ) {
+			$local_dictionaries_index = $_;
+		}
+	}
+
+	TRACE("local_dictionaries_index = $local_dictionaries_index ") if DEBUG;
+
+	$self->language->Clear;
+
+	# load local_dictionaries_names
+	$self->language->Append( $self->{local_dictionaries_names} );
+
+	# highlight prefered_dictionary
+	$self->language->SetSelection($local_dictionaries_index);
+
+	return;
+}
+
+#######
+# event handler _on_button_ok_clicked
+#######
+sub _on_button_save_clicked {
+	my $self = shift;
+
+	my $select_dictionary_name = $self->{local_dictionaries_names}->[ $self->language->GetSelection() ];
+	TRACE("selected dictionary name = $select_dictionary_name ") if DEBUG;
+
+	my $select_dictionary_iso = 0;
+
+	# require Padre::Locale;
+	for my $iso ( keys %{ $self->{dictionary_names} } ) {
+		if ( $self->padre_locale_label($iso) eq $select_dictionary_name ) {
+			$select_dictionary_iso = $iso;
+		}
+	}
+	TRACE("selected dictionary iso = $select_dictionary_iso ") if DEBUG;
+
+	# save config info
+	my $config = $self->{_parent}->config_read;
+	$config->{ $self->{dictionary} } = $select_dictionary_iso;
+	$self->{_parent}->config_write($config);
+
+	return;
+}
+
+#######
+# event handler on_dictionary_chosen
+#######
+sub on_dictionary_chosen {
+	my $self = shift;
+
+	if ( $self->chosen_dictionary->GetSelection() == 0 ) {
+		$self->{dictionary} = 'Aspell';
+		$self->_local_aspell_dictionaries;
+	} else {
+		$self->{dictionary} = 'Hunspell';
+		$self->_local_hunspell_dictionaries;
+	}
+
+	$self->display_dictionaries;
+
+	return;
+}
+
+#######
+# Composed Method padre_local_label
+# aspell to padre local label
+#######
+sub padre_locale_label {
+	my $self                = shift;
+	my $local_dictionary    = shift;
+	my $lc_local_dictionary = lc( $local_dictionary ? $local_dictionary : 'en_GB' );
+	$lc_local_dictionary =~ s/_/-/;
+	require Padre::Locale;
+	my $label = Padre::Locale::label($lc_local_dictionary);
+
+	return $label;
 }
 
 
 1;
 
-
-
-=pod
-
-=head1 NAME
-
-Padre::Plugin::SpellCheck::Preferences - Preferences dialog for padre spell check
-
-=head1 VERSION
-
-version 1.21
+__END__
 
 =head1 DESCRIPTION
 
 This module implements the dialog window that will be used to set the
 spell check preferences.
+
+
 
 =head1 PUBLIC METHODS
 
@@ -174,44 +265,19 @@ spell check preferences.
 
 =over 4
 
-=item my $dialog = PPS::Preferences->new( %params );
+=item my $dialog = P-P-S::Preferences->new( %params );
 
 Create and return a new dialog window.
 
+
 =back
+
+
+
 
 =head1 SEE ALSO
 
 For all related information (bug reporting, source code repository,
 etc.), refer to L<Padre::Plugin::SpellCheck>.
 
-=head1 AUTHORS
-
-=over 4
-
-=item *
-
-Fayland Lam <fayland at gmail.com>
-
-=item *
-
-Jerome Quelin <jquelin@gmail.com>
-
-=item *
-
-Ahmad M. Zawawi <ahmad.zawawi@gmail.com>
-
-=back
-
-=head1 COPYRIGHT AND LICENSE
-
-This software is copyright (c) 2010 by Fayland Lam, Jerome Quelin.
-
-This is free software; you can redistribute it and/or modify it under
-the same terms as the Perl 5 programming language system itself.
-
 =cut
-
-
-__END__
-

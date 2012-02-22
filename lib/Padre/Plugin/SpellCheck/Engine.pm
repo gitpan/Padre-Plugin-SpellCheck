@@ -1,23 +1,24 @@
 package Padre::Plugin::SpellCheck::Engine;
-BEGIN {
-  $Padre::Plugin::SpellCheck::Engine::VERSION = '1.21';
-}
-
-# ABSTRACT: Spell check engine for the plugin
 
 use warnings;
 use strict;
 
-use Class::XSAccessor accessors => {
-	_ignore    => '_ignore',    # list of words to ignore
-	_plugin    => '_plugin',    # ref to spellecheck plugin
-	_speller   => '_speller',   # real text::aspell object
-	_utf_chars => '_utf_chars', # FIXME: as soon as wxWidgets/wxPerl supports
-	                            # newer version of STC:
-	                            # number of UTF8 characters
-	                            # used in calculating current possition
+use Padre::Logger;
+use Padre::Unload                          ();
+use Text::Aspell ();
+
+use Class::XSAccessor {	
+	replace => 1,
+	accessors => {
+		_ignore    => '_ignore',    # list of words to ignore
+		                            # _plugin    => '_plugin',    # ref to spellecheck plugin
+		_speller   => '_speller',   # real text::aspell object
+		_utf_chars => '_utf_chars', # FIXME: as soon as wxWidgets/wxPerl supports
+		                            # newer version of STC:
+		                            # number of UTF8 characters
+		                            # used in calculating current possition
+	},
 };
-use Text::Aspell;
 
 my %MIMETYPE_MODE = (
 	'application/x-latex' => 'tex',
@@ -25,43 +26,101 @@ my %MIMETYPE_MODE = (
 	'text/xml'            => 'sgml',
 );
 
-# -- constructor
 
+#######
+# new
+#######
 sub new {
-	my ( $class, $plugin, $mimetype ) = @_;
+	my $class = shift;   # What class are we constructing?
+	my $self  = {};      # Allocate new memory
+	bless $self, $class; # Mark it of the right type
+	$self->_init(@_);    # Call _init with remaining args
+	return $self;
+}
+sub new_old {
 
-	my $self = bless {
-		_ignore    => {},
-		_plugin    => $plugin,
-		_utf_chars => 0,
-	}, $class;
+	# my ( $class, $plugin, $mimetype ) = @_;
+	my ( $class, $mimetype, $iso ) = @_;
+	my $self  = {};    # Allocate new memory
+	bless $self, $class; # Mark it of the right type
+	# my $self = bless {
+		# _ignore => {},
 
-	# create speller object
+		# # _plugin    => $plugin,
+		# _utf_chars => 0,
+	# }, $class;
+	
+	$self->_ignore( {} );
+	$self->_utf_chars(0);
+	
+	
+	# # create speller object
 	my $speller = Text::Aspell->new;
-	my $config  = $plugin->config;
 
-	# TODO: configurable later
+	# # my $config  = $plugin->config;
+
+	# # TODO: configurable later
 	$speller->set_option( 'sug-mode', 'normal' );
-	$speller->set_option( 'lang',     $config->{dictionary} );
 
-	$speller->print_config;
+	# # $speller->set_option( 'lang',     $config->{dictionary} );
+	$speller->set_option( 'lang', $iso );
 
-	if (exists $MIMETYPE_MODE{$mimetype}) {
-		if (not defined $speller->set_option( 'mode', $MIMETYPE_MODE{$mimetype})) {
+	# #$speller->print_config;  # to STDOUT	
+	# # TRACE( "print config info = " . $speller->print_config ) if DEBUG;
+	
+	# my $speller = Text::SpellChecker->new(text => $text, from_frozen => $serialized_data, lang => $lang)
+	
+	if ( exists $MIMETYPE_MODE{$mimetype} ) {
+		if ( not defined $speller->set_option( 'mode', $MIMETYPE_MODE{$mimetype} ) ) {
 			my $err = $speller->errstr;
 			warn "Could not set aspell mode '$MIMETYPE_MODE{$mimetype}': $err\n";
 		}
 	}
 
-	$speller->print_config;
+	TRACE( $speller->print_config ) if DEBUG;
 
 	$self->_speller($speller);
 
 	return $self;
 }
+#######
+# _init
+#######
+sub _init {
+	# my ( $self, %args ) = @_;
+	my ( $self, $mimetype, $iso ) = @_;
+	
+	$self->_ignore( {} );
+	$self->_utf_chars(0);
+	# create speller object
+	my $speller = Text::Aspell->new;
+
+	# my $config  = $plugin->config;
+
+	# TODO: configurable later
+	$speller->set_option( 'sug-mode', 'normal' );
+
+	# $speller->set_option( 'lang',     $config->{dictionary} );
+	$speller->set_option( 'lang', $iso );
+
+	#$speller->print_config;  # to STDOUT	
+	# TRACE( "print config info = " . $speller->print_config ) if DEBUG;
+	
+	if ( exists $MIMETYPE_MODE{$mimetype} ) {
+		if ( not defined $speller->set_option( 'mode', $MIMETYPE_MODE{$mimetype} ) ) {
+			my $err = $speller->errstr;
+			warn "Could not set aspell mode '$MIMETYPE_MODE{$mimetype}': $err\n";
+		}
+	}
+
+	TRACE( $speller->print_config ) if DEBUG;
+
+	$self->_speller($speller);
+
+	return;
+}
 
 
-# -- public methods
 
 sub check {
 	my ( $self, $text ) = @_;
@@ -139,17 +198,7 @@ sub _count_utf_chars {
 
 1;
 
-
-
-=pod
-
-=head1 NAME
-
-Padre::Plugin::SpellCheck::Engine - Spell check engine for the plugin
-
-=head1 VERSION
-
-version 1.21
+__END__
 
 =head1 PUBLIC METHODS
 
@@ -161,7 +210,10 @@ version 1.21
 
 Create a new engine to be used later on.
 
+
 =back
+
+
 
 =head2 Instance methods
 
@@ -174,9 +226,11 @@ first error encountered (undef if no spelling mistake). An error is
 reported as the faulty C<$word>, as well as the C<$pos> of the word in
 the text (position of the start of the faulty word).
 
+
 =item * $engine->ignore( $word );
 
 Tell engine to ignore C<$word> for rest of the spell check.
+
 
 =item * my @dictionaries = $engine->dictionaries;
 
@@ -185,9 +239,12 @@ names returned are the dictionary locale names (eg C<en_US>). Note
 that only plain locales are reported, the variations coming with
 aspell are stripped.
 
+
 =item * my @suggestions = $engine->suggestions( $word );
 
 Return suggestions for C<$word>.
+
+
 
 =back
 
@@ -195,34 +252,4 @@ Return suggestions for C<$word>.
 
 For all related information (bug reporting, source code repository,
 etc.), refer to L<Padre::Plugin::SpellCheck>.
-
-=head1 AUTHORS
-
-=over 4
-
-=item *
-
-Fayland Lam <fayland at gmail.com>
-
-=item *
-
-Jerome Quelin <jquelin@gmail.com>
-
-=item *
-
-Ahmad M. Zawawi <ahmad.zawawi@gmail.com>
-
-=back
-
-=head1 COPYRIGHT AND LICENSE
-
-This software is copyright (c) 2010 by Fayland Lam, Jerome Quelin.
-
-This is free software; you can redistribute it and/or modify it under
-the same terms as the Perl 5 programming language system itself.
-
 =cut
-
-
-__END__
-
