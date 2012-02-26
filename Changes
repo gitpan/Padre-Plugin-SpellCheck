@@ -1,4 +1,13 @@
 Revision history for Padre-Plugin-SpellCheck
+1.23    2012.TBA
+    - fix plugin_enable school boy error (BOWTIE)
+    - fix the config DB to check on enable for past and new install (BOWTIE)
+    - Bump version to 1.23 (BOWTIE)
+    - added Text::Hunspell (BOWTIE)
+    - Update Status info in Checker to show dictionary and language (ALIAS)(BOWTIE)
+    - rename Method accessors to inc get/set (BOWTIE)
+    - remove un-used Methods (BOWTIE)
+    - add the standard License to the tail as and where (BOWTIE)
 
 1.22    2012.02.22
 	- remove dead code in plugin_icon method (ZENOG)

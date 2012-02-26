@@ -48,3 +48,12 @@ t/01-SpellCheck.t
 t/02-Preferences.t
 t/03-Checker.t
 t/04-Engine.t
+xt/badcode.t
+xt/changes.t
+xt/critic.t
+xt/distmanifest.t
+xt/hasversion.t
+xt/meta.t
+xt/minimumversion.t
+xt/pod.t
+xt/podcoverage.t

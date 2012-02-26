@@ -3,18 +3,20 @@ package Padre::Plugin::SpellCheck::Preferences;
 use warnings;
 use strict;
 
-#TODO check logger against Plug-in Manager! for adamk
 use Padre::Logger;
 use Padre::Util                                 ();
 use Padre::Locale                               ();
 use Padre::Unload                               ();
 use Padre::Plugin::SpellCheck::FBP::Preferences ();
 
-our $VERSION = '1.22';
+our $VERSION = '1.23';
 our @ISA     = qw{
 	Padre::Plugin::SpellCheck::FBP::Preferences
 };
-
+# use Data::Printer {
+	# caller_info => 1,
+	# colored     => 1,
+# };
 
 #######
 # Method new
@@ -26,6 +28,7 @@ sub new {
 	# Create the dialog
 	my $self = $class->SUPER::new( $_parent->main );
 
+	# for access to P-P-SpellCheck DB config
 	$self->{_parent} = $_parent;
 
 	# define where to display main dialog
@@ -42,24 +45,23 @@ sub new {
 sub set_up {
 	my $self = shift;
 
-	$self->{dictionary} = 'Aspell';
+	# $self->{dictionary} = 'Aspell';
+	$self->{dictionary} = $self->{_parent}->config_read->{Engine};
 
-	# use Aspell as default, as the aspell engine works
-	$self->_local_aspell_dictionaries;
+	# print " dictionary/engine = $self->{dictionary}\n";
 
-	# $self->_local_hunspell_dictionaries;
+	if ( $self->{dictionary} eq 'Aspell' ) {
+
+		# use Aspell as default, as the aspell engine works
+		$self->chosen_dictionary->SetSelection(0);
+		$self->_local_aspell_dictionaries;
+	} else {
+		$self->chosen_dictionary->SetSelection(1);
+		$self->_local_hunspell_dictionaries;
+	}
 
 	# update dialog with locally install dictionaries;
 	$self->display_dictionaries;
-
-	# Tidy up config DB if earler version
-	my $config = $self->{_parent}->config_read;
-	if ( eval { $config->{Version} < 1.22 } ) {
-		$self->{_parent}->config_write( {} );
-		$config = $self->{_parent}->config_read;
-		$config->{Version} = $VERSION;
-		$self->{_parent}->config_write($config);
-	}
 
 	return;
 }
@@ -82,8 +84,8 @@ sub _local_aspell_dictionaries {
 
 		my @local_dictionaries = grep { $_ =~ /^\w+$/ } map { $_->{name} } $speller->dictionary_info;
 		$self->{local_dictionaries} = \@local_dictionaries;
-		TRACE("locally installed dictionaries found = $self->{local_dictionaries}") if DEBUG;
-		TRACE("iso to dictionary names = $self->{dictionary_names}")                if DEBUG;
+		TRACE("locally installed dictionaries found = @local_dictionaries") if DEBUG;
+		TRACE("iso to dictionary names = $self->{dictionary_names}")        if DEBUG;
 
 		#TODO compose method local iso to padre names
 		for (@local_dictionaries) {
@@ -208,8 +210,15 @@ sub _on_button_save_clicked {
 	# save config info
 	my $config = $self->{_parent}->config_read;
 	$config->{ $self->{dictionary} } = $select_dictionary_iso;
+	$config->{Engine} = $self->{dictionary};
 	$self->{_parent}->config_write($config);
 
+	#this is naff
+	# TRACE("Saved P-P-SpellCheck config DB = $self->{_parent}->config_read ") if DEBUG;
+
+	# p $self->{_parent}->config_read;
+
+	$self->{_parent}->clean_dialog;
 	return;
 }
 
@@ -237,9 +246,12 @@ sub on_dictionary_chosen {
 # aspell to padre local label
 #######
 sub padre_locale_label {
-	my $self                = shift;
-	my $local_dictionary    = shift;
+	my $self             = shift;
+	my $local_dictionary = shift;
+
 	my $lc_local_dictionary = lc( $local_dictionary ? $local_dictionary : 'en_GB' );
+
+	# my $lc_local_dictionary = lc $local_dictionary;
 	$lc_local_dictionary =~ s/_/-/;
 	require Padre::Locale;
 	my $label = Padre::Locale::label($lc_local_dictionary);
@@ -252,32 +264,7 @@ sub padre_locale_label {
 
 __END__
 
-=head1 DESCRIPTION
-
-This module implements the dialog window that will be used to set the
-spell check preferences.
-
-
-
-=head1 PUBLIC METHODS
-
-=head2 Constructor
-
-=over 4
-
-=item my $dialog = P-P-S::Preferences->new( %params );
-
-Create and return a new dialog window.
-
-
-=back
-
-
-
-
-=head1 SEE ALSO
-
-For all related information (bug reporting, source code repository,
-etc.), refer to L<Padre::Plugin::SpellCheck>.
-
-=cut
+# Copyright 2008-2012 The Padre development team as listed in Padre.pm.
+# LICENSE
+# This program is free software; you can redistribute it and/or
+# modify it under the same terms as Perl 5 itself.

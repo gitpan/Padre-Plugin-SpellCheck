@@ -13,44 +13,42 @@ use Class::XSAccessor {
 		_list        => '_list',        # listbox listing the suggestions
 		_offset      => '_offset',      # offset of _text within the editor
 		                                # _plugin      => '_plugin',      # reference to spellcheck plugin
+		_parent      => '_parent',      # reference to spellcheck plugin
 		_sizer       => '_sizer',       # window sizer
 		_text        => '_text',        # text being spellchecked
-		_iso_name    => '_iso_name',    # our stored dictonary lanaguage
+		                                # _iso_name    => '_iso_name',    # our stored dictonary lanaguage
 	},
 };
 
-# use Padre::Current;
-# use Padre::Wx   ();
-# use Padre::Util ('_T');
+# use Data::Printer {
+	# caller_info => 1,
+	# colored     => 1,
+# };
+
 use Encode;
 use Padre::Logger;
-use Padre::Unload                          ();
+use Padre::Locale                           ();
+use Padre::Unload                           ();
 use Padre::Plugin::SpellCheck::FBP::Checker ();
 
-our $VERSION = '1.22';
+our $VERSION = '1.23';
 our @ISA     = qw{
 	Padre::Plugin::SpellCheck::FBP::Checker
 };
 
-# -- constructor
 
 #######
 # Method new
 #######
 sub new {
-	my $class = shift;
-	# my $main  = shift; # Padre $main window integration
-	# my $lang_iso = shift;
-
+	my $class   = shift;
 	my $_parent = shift; # parent $self
 
 	# Create the dialog
-	my $self = $class->SUPER::new($_parent->main);
-	my $lang_iso = $_parent->config_read->{Aspell};
-	$self->_iso_name($lang_iso);
+	my $self = $class->SUPER::new( $_parent->main );
 
-	#TODO there must be a better way
-	# $self->{_plugin} = $_plugin;
+	# for access to P-P-SpellCheck DB config
+	$self->{_parent} = $_parent;
 
 	# define where to display main dialog
 	$self->CenterOnParent;
@@ -68,7 +66,15 @@ sub set_up {
 	my $main    = $self->main;
 	my $current = $main->current;
 
-	# my $iso     = $self->iso;
+	# p $self->{_parent}->config_read;
+
+	my $text_spell = $self->{_parent}->config_read->{Engine};
+	my $iso_name   = $self->{_parent}->config_read->{$text_spell};
+
+	#Thanks alias
+	my $status_info = "$text_spell => " . $self->padre_locale_label($iso_name);
+	$self->{status_info}->GetStaticBox->SetLabel($status_info);
+
 
 	# TODO: maybe grey out the menu option if
 	# no file is opened?
@@ -79,23 +85,18 @@ sub set_up {
 
 	my $mime_type = $current->document->mimetype;
 	require Padre::Plugin::SpellCheck::Engine;
-	my $engine = Padre::Plugin::SpellCheck::Engine->new( $mime_type, $self->_iso_name );
+	my $engine = Padre::Plugin::SpellCheck::Engine->new( $mime_type, $iso_name, $text_spell );
 
 	# fetch text to check
 	my $selection = $current->text;
 	my $wholetext = $current->document->text_get;
 	my $text      = $selection || $wholetext;
-	# p $text;
-	my $offset = $selection ? $current->editor->GetSelectionStart : 0;
+	my $offset    = $selection ? $current->editor->GetSelectionStart : 0;
 
 	# try to find a mistake
 	my ( $word, $pos ) = $engine->check($text);
-
-	# p $word;
-	# p $pos;
 	my @error = $engine->check($text);
 
-	# p @error;
 	$self->{error} = \@error;
 
 
@@ -110,70 +111,29 @@ sub set_up {
 		return;
 	}
 
-	# $self->_error( $word, $pos );
 	$self->_engine($engine);
 	$self->_offset($offset);
 	$self->_text($text);
 
-	# # $self->_plugin( $_plugin );
 	$self->_autoreplace( {} );
-
-	# create the controls
-	$self->_create_labels;
-
 
 	$self->_update;
 
 	return;
 }
 
-#
-# $dialog->_create_labels;
-#
-# create the top labels.
-#
-# no params. no return values.
-#
-sub _create_labels {
-	my $self = shift;
-
-	#TODO alias how do we change the contents of the top bar, known as 'title'
-	# $self->title->SetLabel( 'FUN' );
-	#
-	# Status Info.
-	#	labeltext	_label
-	#
-	# $self->{status_info}->SetLabel('iso');
-	$self->labeltext->SetLabel('ready willing &');
-	$self->label->SetLabel('able');
-	return;
-}
-
-#
-# self->_update;
-#
+#######
+# Method _update;
 # update the dialog box with current error. aa
-#
+#######
 sub _update {
 	my $self    = shift;
 	my $main    = $self->main;
 	my $current = $main->current;
 	my $editor  = $current->editor;
 
-	# my $error = $self->_error;
-	# my ( $word, $pos ) = @$error;
-
-	# p $self->{error};
-
 	my $error = $self->{error};
-
-	# p $error;
 	my ( $word, $pos ) = @$error;
-
-	# p @error;
-	# my ( $word, $pos ) = @{$self->{error}};
-	# p $word;
-	# p $pos;
 
 	# update selection in parent window
 	## my $editor = Padre::Current->editor;
@@ -188,10 +148,8 @@ sub _update {
 	$self->label->SetLabel($word);
 
 	# update list
-	my @suggestions = $self->_engine->suggestions($word);
+	my @suggestions = $self->_engine->get_suggestions($word);
 
-	# my $list        = $self->_list;
-	# $list->DeleteAllItems;
 	$self->list->DeleteAllItems;
 	my $i = 0;
 	foreach my $w ( reverse @suggestions ) {
@@ -199,94 +157,79 @@ sub _update {
 		my $item = Wx::ListItem->new;
 		$item->SetText($w);
 		my $idx = $self->list->InsertItem($item);
-		last if ++$i == 32; #TODO Fixme: should be a preference
+		last if ++$i == 32; #TODO Fixme: should be a preference, why
 	}
 
 	# select first item
 	my $item = $self->list->GetItem(0);
 	$item->SetState(Wx::wxLIST_STATE_SELECTED);
 	$self->list->SetItem($item);
+	
+	return;
 }
 
 
-
-# -- private methods
-
-
-
-
-
-#
+#######
 # dialog->_next;
 #
 # try to find next mistake, and update dialog to show this new error. if
 # no error, display a message and exit.
 #
 # no params. no return value.
-#
+#######
 sub _next {
 	my ($self) = @_;
 	my $autoreplace = $self->_autoreplace;
 
-	{
+	# try to find next mistake
+	my ( $word, $pos ) = $self->_engine->check( $self->_text );
 
-		# try to find next mistake
-		my ( $word, $pos ) = $self->_engine->check( $self->_text );
+	my @error = $self->_engine->check( $self->_text );
+	$self->{error} = \@error;
 
-		# $self->_error( [ $word, $pos ] );
+	# no mistake means we're done
+	if ( not defined $word ) {
+		$self->list->DeleteAllItems;
+		$self->labeltext->SetLabel('Spell check finished:...');
+		$self->label->SetLabel('Click Close');
 
-		my @error = $self->_engine->check( $self->_text );
-		$self->{error} = \@error;
+		# $self->replace->Disable;
+		# $self->replace_all->Disable;
+		# $self->{ignore}->Disable;
+		# $self->{ignore_all}->Disable;
+		# $self->list->DeleteAllItems;
+		return;
+	}
 
-		# my $error = $self->{error};
-		# my ( $word, $pos ) = @error;
-
-		# no mistake means we're done
-		if ( not defined $word ) {
-			$self->list->DeleteAllItems;
-			$self->labeltext->SetLabel('Spell check finished:...');
-			$self->label->SetLabel('Click Close');
-			# $self->replace->Disable;
-			# $self->replace_all->Disable;
-			# $self->{ignore}->Disable;
-			# $self->{ignore_all}->Disable;
-			# $self->list->DeleteAllItems;
-			return;
-		}
-
-		# check if we have hit a replace all word
-		if ( exists $autoreplace->{$word} ) {
-			$self->_replace( $autoreplace->{$word} );
-			redo; # move on to next error
-		}
+	# check if we have hit a replace all word
+	if ( exists $autoreplace->{$word} ) {
+		$self->_replace( $autoreplace->{$word} );
+		redo; # move on to next error
 	}
 
 	# update gui with new error
 	$self->_update;
+	return;
 }
 
-#
-# $self->_replace( $word );
+#######
+# Method _replace( $word );
 #
 # fix current error by replacing faulty word with $word.
 #
 # no param. no return value.
-#
+#######
 sub _replace {
 	my ( $self, $new ) = @_;
 	my $main   = $self->main;
 	my $editor = $main->current->editor;
 
-	# my $editor = Padre::Current->editor;
-
 	# replace word in editor
 	my $error = $self->{error};
 	my ( $word, $pos ) = @$error;
 
-	# my $error  = $self->_error;
 	my $offset = $self->_offset;
 
-	# my ( $word, $pos ) = @$error;
 	my $from = $offset + $pos + $self->_engine->_utf_chars;
 	my $to   = $from + length Encode::encode_utf8($word);
 	$editor->SetSelection( $from, $to );
@@ -305,50 +248,31 @@ sub _replace {
 	$self->_text($text);
 	$offset += $posnew;
 	$self->_offset($offset);
+	
+	return;
 }
-
-
-
-
-
-# -- public methods
-
-
-
 
 
 ########
 # Event Handlers
 ########
 
-#
-# $self->_on_butclose_clicked;
-#
-# handler called when the close button has been clicked.
-#
-# sub _on_butclose_clicked {
-# my $self = shift;
-# $self->Destroy;
-# }
-
-#
-# $self->_on_butignore_all_clicked;
-#
-# handler called when the ignore all button has been clicked.
-#
+#######
+# Event Handler _on_ignore_all_clicked;
+#######
 sub _on_ignore_all_clicked {
 	my $self  = shift;
 	my $error = $self->{error};
 	my ( $word, $pos ) = @$error;
-	$self->_engine->ignore($word);
+	$self->_engine->set_ignore_word($word);
 	$self->_on_ignore_clicked;
+	
+	return;
 }
 
-#
-# $self->_on_butignore_clicked;
-#
-# handler called when the ignore button has been clicked.
-#
+#######
+# Event Handler$self->_on_ignore_clicked;
+#######
 sub _on_ignore_clicked {
 	my $self = shift;
 
@@ -356,8 +280,6 @@ sub _on_ignore_clicked {
 	my $error = $self->{error};
 	my ( $word, $pos ) = @$error;
 
-	# my $error = $self->_error;
-	# my ( $word, $pos ) = @$error;
 	$pos += length $word;
 	my $text = substr $self->_text, $pos;
 	$self->_text($text);
@@ -372,120 +294,71 @@ sub _on_ignore_clicked {
 
 	# try to find next error
 	$self->_next;
+	return;
 }
 
-#
-# $self->_on_butreplace_all_clicked;
-#
-# handler called when the replace all button has been clicked.
-#
+#######
+# Event Handler _on_replace_all_clicked;
+#######
 sub _on_replace_all_clicked {
 	my $self  = shift;
 	my $error = $self->{error};
 	my ( $word, $pos ) = @$error;
 
 	# get replacing word
-	# my $list = $self->_list;
 	my $index = $self->list->GetNextItem( -1, Wx::wxLIST_NEXT_ALL, Wx::wxLIST_STATE_SELECTED );
 	return if $index == -1;
 	my $selected_word = $self->list->GetItem($index)->GetText;
 
 	# store automatic replacement
-	# my $old = $self->_error->[0];
 	$self->_autoreplace->{$word} = $selected_word;
 
 	# do the replacement
 	$self->_on_replace_clicked;
+	return;
 }
 
-#
-# $self->_on_butreplace_clicked;
-#
-# handler called when the replace button has been clicked.
-#
+#######
+# Event Handler _on_replace_clicked;
+#######
 sub _on_replace_clicked {
 	my $self  = shift;
 	my $event = shift;
 
-	# my $list = $self->_list;
-
 	# get replacing word
 	my $index = $self->list->GetNextItem( -1, Wx::wxLIST_NEXT_ALL, Wx::wxLIST_STATE_SELECTED );
-
-	# p $index;
 	return if $index == -1;
 	my $selected_word = $self->list->GetItem($index)->GetText;
-	# p $selected_word;
 
 	# actually replace word in editor
 	$self->_replace($selected_word);
 
 	# try to find next error
 	$self->_next;
+	return;
 }
 
+#######
+# Composed Method padre_local_label
+# aspell to padre local label
+#######
+sub padre_locale_label {
+	my $self             = shift;
+	my $local_dictionary = shift;
 
+	my $lc_local_dictionary = lc( $local_dictionary ? $local_dictionary : 'en_GB' );
+	$lc_local_dictionary =~ s/_/-/;
+	require Padre::Locale;
+	my $label = Padre::Locale::label($lc_local_dictionary);
 
-
-
+	return $label;
+}
 
 1;
 
 __END__
 
-=head1 DESCRIPTION
-
-This module implements the dialog window that will be used to interact
-with the user when mistakes have been spotted.
-
-
-
-=head1 PUBLIC METHODS
-
-=head2 Constructor
-
-=over 4
-
-=item my $dialog = PPS::Dialog->new( %params );
-
-Create and return a new dialog window. The following params are needed:
-
-=over 4
-
-=item text => $text
-
-The text being spell checked.
-
-=item offset => $offset
-
-The offset of C<$text> within the editor. 0 if spell checking the whole file.
-
-=item error => [ $word, $pos ]
-
-The first spotted error, on C<$word> (at position C<$pos>), with some
-associated C<$suggestions> (a list reference).
-
-=item engine => $engine
-
-The $engine being used (a C<Padre::Plugin::SpellCheck::Engine> object).
-
-=back
-
-=back
-
-
-
-=head2 Instance methods
-
-=over 4
-
-=back
-
-
-
-=head1 SEE ALSO
-
-For all related information (bug reporting, source code repository,
-etc.), refer to L<Padre::Plugin::SpellCheck>.
-
-=cut
+# Copyright 2008-2012 The Padre development team as listed in Padre.pm.
+# LICENSE
+# This program is free software; you can redistribute it and/or
+# modify it under the same terms as Perl 5 itself.

@@ -3,12 +3,13 @@ package Padre::Plugin::SpellCheck::Engine;
 use warnings;
 use strict;
 
-use Padre::Logger;
-use Padre::Unload                          ();
-use Text::Aspell ();
+our $VERSION = '1.23';
 
-use Class::XSAccessor {	
-	replace => 1,
+use Padre::Logger;
+use Padre::Unload ();
+
+use Class::XSAccessor {
+	replace   => 1,
 	accessors => {
 		_ignore    => '_ignore',    # list of words to ignore
 		                            # _plugin    => '_plugin',    # ref to spellecheck plugin
@@ -37,80 +38,45 @@ sub new {
 	$self->_init(@_);    # Call _init with remaining args
 	return $self;
 }
-sub new_old {
 
-	# my ( $class, $plugin, $mimetype ) = @_;
-	my ( $class, $mimetype, $iso ) = @_;
-	my $self  = {};    # Allocate new memory
-	bless $self, $class; # Mark it of the right type
-	# my $self = bless {
-		# _ignore => {},
 
-		# # _plugin    => $plugin,
-		# _utf_chars => 0,
-	# }, $class;
-	
-	$self->_ignore( {} );
-	$self->_utf_chars(0);
-	
-	
-	# # create speller object
-	my $speller = Text::Aspell->new;
-
-	# # my $config  = $plugin->config;
-
-	# # TODO: configurable later
-	$speller->set_option( 'sug-mode', 'normal' );
-
-	# # $speller->set_option( 'lang',     $config->{dictionary} );
-	$speller->set_option( 'lang', $iso );
-
-	# #$speller->print_config;  # to STDOUT	
-	# # TRACE( "print config info = " . $speller->print_config ) if DEBUG;
-	
-	# my $speller = Text::SpellChecker->new(text => $text, from_frozen => $serialized_data, lang => $lang)
-	
-	if ( exists $MIMETYPE_MODE{$mimetype} ) {
-		if ( not defined $speller->set_option( 'mode', $MIMETYPE_MODE{$mimetype} ) ) {
-			my $err = $speller->errstr;
-			warn "Could not set aspell mode '$MIMETYPE_MODE{$mimetype}': $err\n";
-		}
-	}
-
-	TRACE( $speller->print_config ) if DEBUG;
-
-	$self->_speller($speller);
-
-	return $self;
-}
 #######
-# _init
+# Method _init
 #######
 sub _init {
-	# my ( $self, %args ) = @_;
-	my ( $self, $mimetype, $iso ) = @_;
-	
+	my ( $self, $mimetype, $iso, $engine ) = @_;
+
 	$self->_ignore( {} );
 	$self->_utf_chars(0);
+
+	#just for testing
+	# print "Using Text::$engine with language $iso\n";
+
 	# create speller object
-	my $speller = Text::Aspell->new;
+	my $speller;
+	if ( $engine eq 'Aspell' ) {
+		require Text::Aspell;
+		$speller = Text::Aspell->new;
 
-	# my $config  = $plugin->config;
+		$speller->set_option( 'sug-mode', 'normal' );
+		$speller->set_option( 'lang',     $iso );
 
-	# TODO: configurable later
-	$speller->set_option( 'sug-mode', 'normal' );
-
-	# $speller->set_option( 'lang',     $config->{dictionary} );
-	$speller->set_option( 'lang', $iso );
-
-	#$speller->print_config;  # to STDOUT	
-	# TRACE( "print config info = " . $speller->print_config ) if DEBUG;
-	
-	if ( exists $MIMETYPE_MODE{$mimetype} ) {
-		if ( not defined $speller->set_option( 'mode', $MIMETYPE_MODE{$mimetype} ) ) {
-			my $err = $speller->errstr;
-			warn "Could not set aspell mode '$MIMETYPE_MODE{$mimetype}': $err\n";
+		if ( exists $MIMETYPE_MODE{$mimetype} ) {
+			if ( not defined $speller->set_option( 'mode', $MIMETYPE_MODE{$mimetype} ) ) {
+				my $err = $speller->errstr;
+				warn "Could not set aspell mode '$MIMETYPE_MODE{$mimetype}': $err\n";
+			}
 		}
+
+	} else {
+		require Text::Hunspell;
+
+		#TODO add some checking
+		# You can use relative or absolute paths.
+		$speller = Text::Hunspell->new(
+			"/usr/share/hunspell/$iso.aff", # Hunspell affix file
+			"/usr/share/hunspell/$iso.dic"  # Hunspell dictionary file
+		);
 	}
 
 	TRACE( $speller->print_config ) if DEBUG;
@@ -121,11 +87,12 @@ sub _init {
 }
 
 
-
+#######
+# Method check
+#######
 sub check {
 	my ( $self, $text ) = @_;
-	my $speller = $self->_speller;
-	my $ignore  = $self->_ignore;
+	my $ignore = $self->_ignore;
 
 	# iterate over word boundaries
 	while ( $text =~ /(.+?)(\b|\z)/g ) {
@@ -143,7 +110,9 @@ sub check {
 			$self->_count_utf_chars($word);
 			next;
 		}
-		if ( $speller->check($word) ) {
+
+		# if ( $speller->check($word) ) {
+		if ( $self->_speller->check($word) ) {
 			$self->_count_utf_chars($word);
 			next;
 		}
@@ -164,27 +133,26 @@ sub check {
 	return;
 }
 
-
-sub dictionaries {
-	my ($self) = @_;
-	return grep { $_ =~ /^\w+$/ }
-		map { $_->{name} } $self->_speller->dictionary_info;
-}
-
-sub ignore {
+#######
+# Method set_ignore_word
+#######
+sub set_ignore_word {
 	my ( $self, $word ) = @_;
 	$self->_ignore->{$word} = 1;
+	return;
 }
 
-sub suggestions {
+#######
+# Method get_suggestions
+#######
+sub get_suggestions {
 	my ( $self, $word ) = @_;
 	return $self->_speller->suggest($word);
 }
 
-# -- private methods
 
-#
-# FIXME: as soon as STC issues is resolved
+#######
+#TODO FIXME: as soon as STC issues is resolved
 #
 sub _count_utf_chars {
 	my ( $self, $word ) = @_;
@@ -200,56 +168,7 @@ sub _count_utf_chars {
 
 __END__
 
-=head1 PUBLIC METHODS
-
-=head2 Constructor
-
-=over 4
-
-=item my $engine = PPS::Engine->new;
-
-Create a new engine to be used later on.
-
-
-=back
-
-
-
-=head2 Instance methods
-
-=over 4
-
-=item * my ($word, $pos) = $engine->check( $text );
-
-Spell check C<$text> (according to current speller), and return the
-first error encountered (undef if no spelling mistake). An error is
-reported as the faulty C<$word>, as well as the C<$pos> of the word in
-the text (position of the start of the faulty word).
-
-
-=item * $engine->ignore( $word );
-
-Tell engine to ignore C<$word> for rest of the spell check.
-
-
-=item * my @dictionaries = $engine->dictionaries;
-
-Return a (reduced) list of dictionaries installed with aspell. The
-names returned are the dictionary locale names (eg C<en_US>). Note
-that only plain locales are reported, the variations coming with
-aspell are stripped.
-
-
-=item * my @suggestions = $engine->suggestions( $word );
-
-Return suggestions for C<$word>.
-
-
-
-=back
-
-=head1 SEE ALSO
-
-For all related information (bug reporting, source code repository,
-etc.), refer to L<Padre::Plugin::SpellCheck>.
-=cut
+# Copyright 2008-2012 The Padre development team as listed in Padre.pm.
+# LICENSE
+# This program is free software; you can redistribute it and/or
+# modify it under the same terms as Perl 5 itself.
