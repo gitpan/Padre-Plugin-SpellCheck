@@ -1,19 +1,28 @@
 package Padre::Plugin::SpellCheck;
 
-use 5.008005;
+use 5.010;
 use strict;
 use warnings;
 
 use Padre::Plugin ();
 use Padre::Unload ();
 use File::Which   ();
+use Try::Tiny;
 
-our $VERSION = '1.24';
+our $VERSION = '1.25';
 our @ISA     = 'Padre::Plugin';
-# use Data::Printer {
-	# caller_info => 1,
-	# colored     => 1,
-# };
+
+# Child modules we need to unload when disabled
+use constant CHILDREN => qw{
+	Padre::Plugin::SpellCheck
+	Padre::Plugin::SpellCheck::Checker
+	Padre::Plugin::SpellCheck::FBP::Checker
+	Padre::Plugin::SpellCheck::Engine
+	Padre::Plugin::SpellCheck::Preferences
+	Padre::Plugin::SpellCheck::FBP::Preferences
+	Text::Aspell
+	Text::Hunspell
+};
 
 #######
 # Define Plugin Name Spell Checker
@@ -27,15 +36,15 @@ sub plugin_name {
 #######
 sub padre_interfaces {
 	return (
-		'Padre::Plugin' => '0.94',
-		'Padre::Unload' => '0.94',
+		'Padre::Plugin' => '0.96',
+		'Padre::Unload' => '0.96',
 
 		# used by my sub packages
-		'Padre::Locale'         => '0.94',
-		'Padre::Logger'         => '0.94',
-		'Padre::Wx'             => '0.94',
-		'Padre::Wx::Role::Main' => '0.94',
-		'Padre::Util'           => '0.94',
+		'Padre::Locale'         => '0.96',
+		'Padre::Logger'         => '0.96',
+		'Padre::Wx'             => '0.96',
+		'Padre::Wx::Role::Main' => '0.96',
+		'Padre::Util'           => '0.96',
 	);
 }
 
@@ -47,16 +56,16 @@ sub menu_plugins {
 	my $main = $self->main;
 
 	# Create a manual menu item
-	my $item = Wx::MenuItem->new( undef, -1, $self->plugin_name . "...\tF7 ", );
+	my $menu_item = Wx::MenuItem->new( undef, -1, $self->plugin_name . "...\tF7", );
 	Wx::Event::EVT_MENU(
-		$main, $item,
+		$main,
+		$menu_item,
 		sub {
-			local $@;
-			eval { $self->spell_check($main); };
+			$self->spell_check;
 		},
 	);
 
-	return $item;
+	return $menu_item;
 }
 
 #########
@@ -64,23 +73,25 @@ sub menu_plugins {
 # as we have an external dependency
 #########
 sub plugin_enable {
-	my $self                       = shift;
-	my $local_dictonary_bin_exists = 0;
+	my $self                        = shift;
+	my $local_dictionary_bin_exists = 0;
 
 	# Tests for externals used by Preference's
-	if ( eval { require Text::Aspell } ) {
-		$local_dictonary_bin_exists = 1;
-	}
-	if ( File::Which::which('hunspell') ) {
-		$local_dictonary_bin_exists = 1;
-	}
+	try {
+		if ( require Text::Aspell ) {
+			$local_dictionary_bin_exists = 1;
+		}
+	};
+	try {
+		if ( File::Which::which('hunspell') ) {
+			$local_dictionary_bin_exists = 1;
+		}
+	};
 
 	#Set/ReSet Config data
-	$self->_config if $local_dictonary_bin_exists;
+	$self->_config if $local_dictionary_bin_exists;
 
-	# p $self->_config_read;
-
-	return $local_dictonary_bin_exists;
+	return $local_dictionary_bin_exists;
 }
 
 #######
@@ -104,41 +115,45 @@ sub _config {
 	#	Info P-P-SpellCheck    >= 1.23
 	#	+ $config->{Engine}     = 'Aspell'
 	###
-	if ( eval { $config->{Version} >= 1.23; } ) {
-		return;
-	} elsif (
-		eval {
-			$config->{Version} < 1.23;
+
+	try {
+		if ( $config->{Version} >= 1.23 ) {
+			return;
 		}
-		)
-	{
-		$config->{Version} = $VERSION;
-		$config->{Engine}  = 'Aspell';
-		$self->config_write($config);
-		return;
-	} elsif (
-		eval {
-			$config->{dictionary};
+	};
+
+	try {
+		if ( $config->{Version} < 1.23 ) {
+
+			$config->{Version} = $VERSION;
+			$config->{Engine}  = 'Aspell';
+			$self->config_write($config);
+			return;
 		}
-		)
-	{
-		my $tmp_iso = $config->{dictionary};
-		$self->config_write( {} );
-		$config             = $self->config_read;
-		$config->{Aspell}   = $tmp_iso;
-		$config->{Hunspell} = $tmp_iso;
-		$config->{Version}  = $VERSION;
-		$config->{Engine}   = 'Aspell';
-		$self->config_write($config);
-		return;
-	} else {
+	};
+
+	try {
+		if ( $config->{dictionary} ) {
+			my $tmp_iso = $config->{dictionary};
+			$self->config_write( {} );
+			$config             = $self->config_read;
+			$config->{Aspell}   = $tmp_iso;
+			$config->{Hunspell} = $tmp_iso;
+			$config->{Version}  = $VERSION;
+			$config->{Engine}   = 'Aspell';
+			$self->config_write($config);
+			return;
+		}
+	}
+	catch {
 		$self->config_write( {} );
 		$config->{Aspell}   = 'en_GB';
 		$config->{Hunspell} = 'en_GB';
 		$config->{Version}  = $VERSION;
 		$config->{Engine}   = 'Aspell';
 		$self->config_write($config);
-	}
+		return;
+	};
 
 	return;
 }
@@ -153,19 +168,10 @@ sub plugin_disable {
 	$self->clean_dialog;
 
 	# Unload all our child classes
-
-	require Padre::Unload;
-	Padre::Unload->unload(
-		qw{
-			Padre::Plugin::SpellCheck
-			Padre::Plugin::SpellCheck::Checker
-			Padre::Plugin::SpellCheck::FBP::Checker
-			Padre::Plugin::SpellCheck::Engine
-			Padre::Plugin::SpellCheck::Preferences
-			Padre::Plugin::SpellCheck::FBP::Preferences
-			Text::Aspell
-			}
-	);
+	for my $package (CHILDREN) {
+		require Padre::Unload;
+		Padre::Unload->unload($package);
+	}
 
 	$self->SUPER::plugin_disable(@_);
 
@@ -194,13 +200,19 @@ sub clean_dialog {
 #######
 sub plugin_preferences {
 	my $self = shift;
+	my $main = $self->main;
 
 	# Clean up any previous existing dialog
 	$self->clean_dialog;
 
-	require Padre::Plugin::SpellCheck::Preferences;
-	$self->{dialog} = Padre::Plugin::SpellCheck::Preferences->new($self);
-	$self->{dialog}->ShowModal;
+	try {
+		require Padre::Plugin::SpellCheck::Preferences;
+		$self->{dialog} = Padre::Plugin::SpellCheck::Preferences->new($main);
+		$self->{dialog}->ShowModal;
+	}
+	catch {
+		$self->main->error( sprintf( Wx::gettext('Error: %s'), $_ ) );
+	};
 
 	return;
 }
@@ -210,13 +222,19 @@ sub plugin_preferences {
 #######
 sub spell_check {
 	my $self = shift;
+	my $main = $self->main;
 
 	# Clean up any previous existing dialog
 	$self->clean_dialog;
 
-	require Padre::Plugin::SpellCheck::Checker;
-	$self->{dialog} = Padre::Plugin::SpellCheck::Checker->new($self);
-	$self->{dialog}->Show;
+	try {
+		require Padre::Plugin::SpellCheck::Checker;
+		$self->{dialog} = Padre::Plugin::SpellCheck::Checker->new($main);
+		$self->{dialog}->Show;
+	}
+	catch {
+		$self->main->error( sprintf( Wx::gettext('Error: %s'), $_ ) );
+	};
 
 	return;
 }
@@ -252,6 +270,10 @@ sub menu_plugins_simple {
 =head1 NAME
 
 Padre::Plugin::SpellCheck - Check spelling in Padre The Perl IDE
+
+=head1 VERSION
+
+version 1.25
 
 =head1 DESCRIPTION
 
@@ -393,4 +415,10 @@ This software is copyright (c) 2010 by Fayland Lam, Jerome Quelin.
 
 This program is free software; you can redistribute it and/or
 modify it under the same terms as Perl 5 itself.
+
 =cut
+
+# Copyright 2008-2012 The Padre development team as listed in Padre.pm.
+# LICENSE
+# This program is free software; you can redistribute it and/or
+# modify it under the same terms as Perl 5 itself.

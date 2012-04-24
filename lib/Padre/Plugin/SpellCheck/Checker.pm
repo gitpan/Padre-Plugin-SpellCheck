@@ -8,22 +8,14 @@ use Class::XSAccessor {
 	accessors => {
 		_autoreplace => '_autoreplace', # list of automatic replaces
 		_engine      => '_engine',      # pps:engine object
-		                                # _error       => '_errorpos',    # first error spotted [ $word, $pos ]
 		_label       => '_label',       # label hosting the misspelled word
 		_list        => '_list',        # listbox listing the suggestions
 		_offset      => '_offset',      # offset of _text within the editor
-		                                # _plugin      => '_plugin',      # reference to spellcheck plugin
-		_parent      => '_parent',      # reference to spellcheck plugin
 		_sizer       => '_sizer',       # window sizer
 		_text        => '_text',        # text being spellchecked
 		                                # _iso_name    => '_iso_name',    # our stored dictonary lanaguage
 	},
 };
-
-# use Data::Printer {
-	# caller_info => 1,
-	# colored     => 1,
-# };
 
 use Encode;
 use Padre::Logger;
@@ -31,9 +23,10 @@ use Padre::Locale                           ();
 use Padre::Unload                           ();
 use Padre::Plugin::SpellCheck::FBP::Checker ();
 
-our $VERSION = '1.24';
+our $VERSION = '1.25';
 our @ISA     = qw{
 	Padre::Plugin::SpellCheck::FBP::Checker
+	Padre::Plugin
 };
 
 
@@ -41,35 +34,30 @@ our @ISA     = qw{
 # Method new
 #######
 sub new {
-	my $class   = shift;
-	my $_parent = shift; # parent $self
+	my $class = shift;
+	my $main  = shift;
 
 	# Create the dialog
-	my $self = $class->SUPER::new( $_parent->main );
-
-	# for access to P-P-SpellCheck DB config
-	$self->{_parent} = $_parent;
+	my $self = $class->SUPER::new($main);
 
 	# define where to display main dialog
 	$self->CenterOnParent;
-
-	$self->set_up;
+	$self->SetTitle( sprintf( Wx::gettext('Spell-Checker v%s'), $VERSION ) );
+	$self->_set_up;
 
 	return $self;
 }
 
 #######
-# Method set_up
+# Method _set_up
 #######
-sub set_up {
+sub _set_up {
 	my $self    = shift;
 	my $main    = $self->main;
 	my $current = $main->current;
 
-	# p $self->{_parent}->config_read;
-
-	my $text_spell = $self->{_parent}->config_read->{Engine};
-	my $iso_name   = $self->{_parent}->config_read->{$text_spell};
+	my $text_spell = $self->config_read->{Engine};
+	my $iso_name   = $self->config_read->{$text_spell};
 
 	#Thanks alias
 	my $status_info = "$text_spell => " . $self->padre_locale_label($iso_name);
@@ -164,7 +152,7 @@ sub _update {
 	my $item = $self->list->GetItem(0);
 	$item->SetState(Wx::wxLIST_STATE_SELECTED);
 	$self->list->SetItem($item);
-	
+
 	return;
 }
 
@@ -248,7 +236,7 @@ sub _replace {
 	$self->_text($text);
 	$offset += $posnew;
 	$self->_offset($offset);
-	
+
 	return;
 }
 
@@ -266,7 +254,7 @@ sub _on_ignore_all_clicked {
 	my ( $word, $pos ) = @$error;
 	$self->_engine->set_ignore_word($word);
 	$self->_on_ignore_clicked;
-	
+
 	return;
 }
 
@@ -357,6 +345,72 @@ sub padre_locale_label {
 1;
 
 __END__
+
+=pod
+
+=head1 NAME
+
+Padre::Plugin::SpellCheck::Checker - Check spelling in Padre, The Perl IDE.
+
+=head1 VERSION
+
+version 1.25
+
+=head1 DESCRIPTION
+
+This module implements the Checker dialogue window that will be used to interact
+with the user when spelling mistakes have been spotted.
+
+=head1 METHODS
+
+=over 2
+
+=item * new
+
+	$self->{dialog} = Padre::Plugin::SpellCheck::Checker->new( $self );
+
+Create and return a new dialogue window. 
+
+=item * padre_locale_label
+
+uses Padre::Local to convert language iso693_iso3166 to utf8text strings
+
+=back
+
+=head1 BUGS AND LIMITATIONS
+
+Text::Hunspell hard coded for /usr/share/hunspell/
+
+=head1 DEPENDENCIES
+
+Padre, Padre::Locale, Class::XSAccessor, Padre::Plugin::SpellCheck::FBP::Checker, 
+and either or ( Text::Hunspell or Text::Aspell )
+
+=head1 SEE ALSO
+
+For all related information (bug reporting, source code repository,
+etc.), refer to L<Padre::Plugin::SpellCheck>.
+
+=head1 AUTHORS
+
+Kevin Dawson E<lt>bowtie@cpan.orgE<gt>
+
+Ahmad M. Zawawi E<lt>ahmad.zawawi@gmail.comE<gt>
+
+Fayland Lam E<lt>fayland@gmail.comE<gt>
+
+Jerome Quelin E<lt>jquelin@gmail.comE<gt>
+
+
+=head1 COPYRIGHT AND LICENSE
+
+This software is copyright (c) 2010 by Fayland Lam, Jerome Quelin.
+
+This is free software; you can redistribute it and/or modify it under
+the same terms as the Perl 5 programming language system itself.
+
+=cut
+
 
 # Copyright 2008-2012 The Padre development team as listed in Padre.pm.
 # LICENSE

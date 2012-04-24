@@ -1,9 +1,9 @@
 use Test::More tests => 14;
 
-use_ok( 'Padre::Unload', '0.94' );
-use_ok( 'Padre::Locale', '0.94' );
-use_ok( 'Padre::Util',   '0.94' );
-use_ok( 'Padre::Logger', '0.94' );
+use_ok( 'Padre::Unload', '0.96' );
+use_ok( 'Padre::Locale', '0.96' );
+use_ok( 'Padre::Util',   '0.96' );
+use_ok( 'Padre::Logger', '0.96' );
 
 
 ######
@@ -11,8 +11,8 @@ use_ok( 'Padre::Logger', '0.94' );
 ######
 
 my @subs = qw( _local_aspell_dictionaries _local_hunspell_dictionaries
-	_on_button_save_clicked display_dictionaries
-	new on_dictionary_chosen padre_locale_label set_up
+	_on_button_save_clicked _display_dictionaries
+	new on_dictionary_chosen padre_locale_label _set_up
 );
 
 use_ok( 'Padre::Plugin::SpellCheck::Preferences', @subs );
