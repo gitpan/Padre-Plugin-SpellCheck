@@ -1,5 +1,6 @@
 package Padre::Plugin::SpellCheck::Preferences;
 
+use v5.10;
 use warnings;
 use strict;
 
@@ -10,7 +11,7 @@ use Padre::Locale                               ();
 use Padre::Unload                               ();
 use Padre::Plugin::SpellCheck::FBP::Preferences ();
 
-our $VERSION = '1.25';
+our $VERSION = '1.26';
 our @ISA     = qw{
 	Padre::Plugin::SpellCheck::FBP::Preferences
 	Padre::Plugin
@@ -265,11 +266,11 @@ __END__
 
 =head1 NAME
 
-Padre::Plugin::SpellCheck::Preferences - Check spelling in Padre, The Perl IDE
+Padre::Plugin::SpellCheck::Preferences - Check spelling in Padre, The Perl IDE.
 
 =head1 VERSION
 
-version 1.25
+version 1.26
 
 =head1 DESCRIPTION
 

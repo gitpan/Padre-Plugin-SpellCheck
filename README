@@ -1,8 +1,8 @@
 NAME
-    Padre::Plugin::SpellCheck - Check spelling in Padre The Perl IDE
+    Padre::Plugin::SpellCheck - Check spelling in Padre, The Perl IDE.
 
 VERSION
-    version 1.25
+    version 1.26
 
 DESCRIPTION
     This plug-in allows one to check there spelling within Padre using "F7"

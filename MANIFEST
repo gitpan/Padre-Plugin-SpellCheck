@@ -18,11 +18,12 @@ lib/Padre/Plugin/SpellCheck/Preferences.pm
 Makefile.PL
 MANIFEST			This list of files
 META.yml
+MYMETA.json
+MYMETA.yml
 Padre-Plugin-SpellChecker.fbp
 README
 share/icons/README
 share/icons/spellcheck.png
-share/locale/messages.pot
 share/locale/Padre__Plugin__SpellCheck-ar.mo
 share/locale/Padre__Plugin__SpellCheck-ar.po
 share/locale/Padre__Plugin__SpellCheck-de.mo
@@ -51,12 +52,3 @@ t/03-podcoverage.t
 t/04-Preferences.t
 t/05-Checker.t
 t/06-Engine.t
-xt/changes.t
-xt/critic.t
-xt/distmanifest.t
-xt/hasversion.t
-xt/kwalitee.t
-xt/meta.t
-xt/minimumversion.t
-xt/pod.t
-xt/podcoverage.t

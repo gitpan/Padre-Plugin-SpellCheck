@@ -1,6 +1,6 @@
 package Padre::Plugin::SpellCheck;
 
-use 5.010;
+use v5.10;
 use strict;
 use warnings;
 
@@ -9,7 +9,7 @@ use Padre::Unload ();
 use File::Which   ();
 use Try::Tiny;
 
-our $VERSION = '1.25';
+our $VERSION = '1.26';
 our @ISA     = 'Padre::Plugin';
 
 # Child modules we need to unload when disabled
@@ -269,11 +269,11 @@ sub menu_plugins_simple {
 
 =head1 NAME
 
-Padre::Plugin::SpellCheck - Check spelling in Padre The Perl IDE
+Padre::Plugin::SpellCheck - Check spelling in Padre, The Perl IDE.
 
 =head1 VERSION
 
-version 1.25
+version 1.26
 
 =head1 DESCRIPTION
 

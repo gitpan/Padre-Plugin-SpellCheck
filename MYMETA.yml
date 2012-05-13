@@ -1,5 +1,5 @@
 ---
-abstract: 'Check spelling in Padre, The Perl IDE.'
+abstract: 'Check spelling in Padre The Perl IDE'
 author:
   - 'Kevin Dawson <bowtie@cpan.org>'
 build_requires:
@@ -9,14 +9,12 @@ build_requires:
   Test::Pod::Coverage: 1.08
 configure_requires:
   ExtUtils::MakeMaker: 6.59
-distribution_type: module
 dynamic_config: 0
-generated_by: 'Module::Install version 1.06'
+generated_by: 'Module::Install version 1.06, CPAN::Meta::Converter version 2.120921'
 license: perl
 meta-spec:
   url: http://module-build.sourceforge.net/META-spec-v1.4.html
   version: 1.4
-module_name: Padre::Plugin::SpellCheck
 name: Padre-Plugin-SpellCheck
 no_index:
   directory:
@@ -30,10 +28,11 @@ requires:
   Module::Util: 1.07
   Padre: 0.96
   Try::Tiny: 0.11
-  perl: 5.10.0
+  perl: 5.010
 resources:
   bugtracker: http://padre.perlide.org/trac
   homepage: http://padre.perlide.org/trac/wiki/PadrePluginSpellCheck
   license: http://dev.perl.org/licenses/
   repository: http://svn.perlide.org/padre/trunk/Padre-Plugin-SpellCheck/
-version: 1.26
+version: 1.25
+x_module_name: Padre::Plugin::SpellCheck

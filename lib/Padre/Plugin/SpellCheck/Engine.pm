@@ -1,9 +1,10 @@
 package Padre::Plugin::SpellCheck::Engine;
 
+use v5.10;
 use warnings;
 use strict;
 
-our $VERSION = '1.25';
+our $VERSION = '1.26';
 
 use Padre::Logger;
 use Padre::Unload ();
@@ -171,11 +172,11 @@ __END__
 
 =head1 NAME
 
-Padre::Plugin::SpellCheck::Engine - Check spelling in Padre The Perl IDE
+Padre::Plugin::SpellCheck::Engine - Check spelling in Padre, The Perl IDE.
 
 =head1 VERSION
 
-version 1.25
+version 1.26
 
 =head1 PUBLIC METHODS
 
