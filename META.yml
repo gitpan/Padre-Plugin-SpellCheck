@@ -36,4 +36,4 @@ resources:
   homepage: http://padre.perlide.org/trac/wiki/PadrePluginSpellCheck
   license: http://dev.perl.org/licenses/
   repository: http://svn.perlide.org/padre/trunk/Padre-Plugin-SpellCheck/
-version: 1.26
+version: 1.27
