@@ -4,7 +4,7 @@
       "Kevin Dawson <bowtie@cpan.org>"
    ],
    "dynamic_config" : 0,
-   "generated_by" : "ExtUtils::MakeMaker version 6.62, CPAN::Meta::Converter version 2.120921",
+   "generated_by" : "Module::Install version 1.06, CPAN::Meta::Converter version 2.120921",
    "license" : [
       "perl_5"
    ],
@@ -15,8 +15,10 @@
    "name" : "Padre-Plugin-SpellCheck",
    "no_index" : {
       "directory" : [
+         "inc",
+         "share",
          "t",
-         "inc"
+         "xt"
       ]
    },
    "prereqs" : {
@@ -30,7 +32,7 @@
       },
       "configure" : {
          "requires" : {
-            "ExtUtils::MakeMaker" : "0"
+            "ExtUtils::MakeMaker" : "6.59"
          }
       },
       "runtime" : {
@@ -45,5 +47,18 @@
       }
    },
    "release_status" : "stable",
-   "version" : "1.27"
+   "resources" : {
+      "bugtracker" : {
+         "web" : "http://padre.perlide.org/trac"
+      },
+      "homepage" : "http://padre.perlide.org/trac/wiki/PadrePluginSpellCheck",
+      "license" : [
+         "http://dev.perl.org/licenses/"
+      ],
+      "repository" : {
+         "url" : "http://svn.perlide.org/padre/trunk/Padre-Plugin-SpellCheck/"
+      }
+   },
+   "version" : "1.28",
+   "x_module_name" : "Padre::Plugin::SpellCheck"
 }

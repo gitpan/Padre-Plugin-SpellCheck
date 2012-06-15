@@ -2,14 +2,15 @@ NAME
     Padre::Plugin::SpellCheck - Check spelling in Padre, The Perl IDE.
 
 VERSION
-    version 1.27
+    version 1.28
 
 DESCRIPTION
     This plug-in allows one to check there spelling within Padre using "F7"
     (standard spelling short-cut across text processors).
 
     One can change the dictionary language used (based upon install
-    languages) in the preferences window via Plug-in Manager. Preferences
+    languages) in the preferences window via Plug-in Manager. Note that
+    preferences can only be setup while the plugin is disabled. Preferences
     are persistent. You need to Save your preferred language.
 
     This plug-in is using "Text::Aspell" default (legacy). You can also use
