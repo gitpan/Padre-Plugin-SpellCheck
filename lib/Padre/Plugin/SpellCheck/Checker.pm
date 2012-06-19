@@ -4,31 +4,27 @@ use v5.10;
 use warnings;
 use strict;
 
-use Class::XSAccessor {
-	replace   => 1,
-	accessors => {
-		_autoreplace => '_autoreplace', # list of automatic replaces
-		_engine      => '_engine',      # pps:engine object
-		_label       => '_label',       # label hosting the misspelled word
-		_list        => '_list',        # listbox listing the suggestions
-		_offset      => '_offset',      # offset of _text within the editor
-		_sizer       => '_sizer',       # window sizer
-		_text        => '_text',        # text being spellchecked
-		                                # _iso_name    => '_iso_name',    # our stored dictonary lanaguage
-	},
-};
-
 use Encode;
 use Padre::Logger;
 use Padre::Locale                           ();
 use Padre::Unload                           ();
 use Padre::Plugin::SpellCheck::FBP::Checker ();
 
-our $VERSION = '1.28';
+our $VERSION = '1.29';
 use parent qw(
 	Padre::Plugin::SpellCheck::FBP::Checker
 	Padre::Plugin
 );
+
+use Class::Accessor 'antlers';
+has _autoreplace => ( is => 'rw' ); # list of automatic replaces
+has _engine      => ( is => 'rw' ); # pps:engine object
+has _label       => ( is => 'rw' ); # label hosting the misspelled word
+has _list        => ( is => 'rw' ); # listbox listing the suggestions
+has _offset      => ( is => 'rw' ); # offset of _text within the editor
+has _sizer       => ( is => 'rw' ); # window sizer
+has _text        => ( is => 'rw' ); # text being spellchecked
+
 
 #######
 # Method new
@@ -74,19 +70,22 @@ sub _set_up {
 	my $mime_type = $current->document->mimetype;
 	require Padre::Plugin::SpellCheck::Engine;
 	my $engine = Padre::Plugin::SpellCheck::Engine->new( $mime_type, $iso_name, $text_spell );
+	$self->_engine($engine);
 
 	# fetch text to check
 	my $selection = $current->text;
 	my $wholetext = $current->document->text_get;
-	my $text      = $selection || $wholetext;
-	my $offset    = $selection ? $current->editor->GetSelectionStart : 0;
+
+	my $text = $selection || $wholetext;
+	$self->_text($text);
+
+	my $offset = $selection ? $current->editor->GetSelectionStart : 0;
+	$self->_offset($offset);
 
 	# try to find a mistake
-	my ( $word, $pos ) = $engine->check($text);
 	my @error = $engine->check($text);
-
+	my ( $word, $pos ) = @error;
 	$self->{error} = \@error;
-
 
 	# no mistake means bbb we're done
 	if ( not defined $word ) {
@@ -94,12 +93,7 @@ sub _set_up {
 		return;
 	}
 
-	$self->_engine($engine);
-	$self->_offset($offset);
-	$self->_text($text);
-
 	$self->_autoreplace( {} );
-
 	$self->_update;
 
 	return;
@@ -119,10 +113,10 @@ sub _update {
 	my ( $word, $pos ) = @{$error};
 
 	# update selection in parent window
-	## my $editor = Padre::Current->editor;
 	my $offset = $self->_offset;
 	my $from   = $offset + $pos + $self->_engine->_utf_chars;
-	my $to     = $from + length Encode::encode_utf8($word);
+
+	my $to = $from + length Encode::encode_utf8($word);
 	$editor->goto_pos_centerize($from);
 	$editor->SetSelection( $from, $to );
 
@@ -165,9 +159,8 @@ sub _next {
 	my $autoreplace = $self->_autoreplace;
 
 	# try to find next mistake
-	my ( $word, $pos ) = $self->_engine->check( $self->_text );
-
 	my @error = $self->_engine->check( $self->_text );
+	my ( $word, $pos ) = @error;
 	$self->{error} = \@error;
 
 	# no mistake means we're done
@@ -208,11 +201,11 @@ sub _replace {
 	# replace word in editor
 	my $error = $self->{error};
 	my ( $word, $pos ) = @{$error};
-
 	my $offset = $self->_offset;
+	my $from   = $offset + $pos + $self->_engine->_utf_chars;
 
-	my $from = $offset + $pos + $self->_engine->_utf_chars;
-	my $to   = $from + length Encode::encode_utf8($word);
+	# say 'length '.length Encode::encode_utf8($word);
+	my $to = $from + length Encode::encode_utf8($word);
 	$editor->SetSelection( $from, $to );
 	$editor->ReplaceSelection($new);
 
@@ -242,7 +235,8 @@ sub _replace {
 # Event Handler _on_ignore_all_clicked;
 #######
 sub _on_ignore_all_clicked {
-	my $self  = shift;
+	my $self = shift;
+
 	my $error = $self->{error};
 	my ( $word, $pos ) = @{$error};
 	$self->_engine->set_ignore_word($word);
@@ -264,6 +258,7 @@ sub _on_ignore_clicked {
 	$pos += length $word;
 	my $text = substr $self->_text, $pos;
 	$self->_text($text);
+
 	my $offset = $self->_offset + $pos;
 	$self->_offset($offset);
 
@@ -347,7 +342,7 @@ Padre::Plugin::SpellCheck::Checker - Check spelling in Padre, The Perl IDE.
 
 =head1 VERSION
 
-version 1.28
+version 1.29
 
 =head1 DESCRIPTION
 

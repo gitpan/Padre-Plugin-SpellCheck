@@ -11,7 +11,7 @@ use Padre::Locale                               ();
 use Padre::Unload                               ();
 use Padre::Plugin::SpellCheck::FBP::Preferences ();
 
-our $VERSION = '1.28';
+our $VERSION = '1.29';
 use parent qw(
 	Padre::Plugin::SpellCheck::FBP::Preferences
 	Padre::Plugin
@@ -83,7 +83,7 @@ sub _local_aspell_dictionaries {
 		TRACE("Aspell iso to dictionary names = $self->{dictionary_names}")        if DEBUG;
 
 		for (@local_dictionaries) {
-			push @local_dictionaries_names, $self->padre_locale_label($_) ;
+			push @local_dictionaries_names, $self->padre_locale_label($_);
 			$self->{dictionary_names}{$_} = $self->padre_locale_label($_);
 		}
 
@@ -130,7 +130,6 @@ sub _local_hunspell_dictionaries {
 			}
 		}
 
-		my @speller;
 		while ( my ( $key, $value ) = each %temp_speller ) {
 			push @local_dictionaries, $key;
 		}
@@ -276,7 +275,7 @@ Padre::Plugin::SpellCheck::Preferences - Check spelling in Padre, The Perl IDE.
 
 =head1 VERSION
 
-version 1.28
+version 1.29
 
 =head1 DESCRIPTION
 
