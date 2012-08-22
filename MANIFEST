@@ -22,6 +22,7 @@ MYMETA.json
 MYMETA.yml
 Padre-Plugin-SpellChecker.fbp
 README
+share/icons/16x16/spellcheck.png
 share/icons/README
 share/icons/spellcheck.png
 share/locale/Padre__Plugin__SpellCheck-ar.mo

@@ -59,6 +59,6 @@
          "url" : "http://svn.perlide.org/padre/trunk/Padre-Plugin-SpellCheck/"
       }
    },
-   "version" : "1.29",
+   "version" : "1.30",
    "x_module_name" : "Padre::Plugin::SpellCheck"
 }
