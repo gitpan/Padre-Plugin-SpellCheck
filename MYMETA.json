@@ -46,7 +46,7 @@
          }
       }
    },
-   "release_status" : "stable",
+   "release_status" : "testing",
    "resources" : {
       "bugtracker" : {
          "web" : "http://padre.perlide.org/trac"
@@ -59,6 +59,6 @@
          "url" : "http://svn.perlide.org/padre/trunk/Padre-Plugin-SpellCheck/"
       }
    },
-   "version" : "1.30",
+   "version" : "1.31_01",
    "x_module_name" : "Padre::Plugin::SpellCheck"
 }

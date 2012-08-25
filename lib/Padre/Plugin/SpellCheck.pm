@@ -9,7 +9,7 @@ use Padre::Unload ();
 use File::Which   ();
 use Try::Tiny;
 
-our $VERSION = '1.31';
+our $VERSION = '1.31_01';
 use parent qw( Padre::Plugin );
 
 # Child modules we need to unload when disabled
@@ -264,7 +264,7 @@ sub event_on_context_menu {
 
 	$menu->AppendSeparator;
 
-	my $item = $menu->Append( -1, Wx::gettext('SpellCheck Preferences') );
+	my $item = $menu->Append( -1, Wx::gettext('SpellCheck Preferences...') );
 	Wx::Event::EVT_MENU(
 		$self->main,
 		$item,
@@ -297,7 +297,7 @@ Padre::Plugin::SpellCheck - Check spelling in Padre, The Perl IDE.
 
 =head1 VERSION
 
-version 1.31
+version 1.31_01
 
 =head1 DESCRIPTION
 
