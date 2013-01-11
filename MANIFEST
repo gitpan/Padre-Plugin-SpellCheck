@@ -8,6 +8,7 @@ inc/Module/Install/Makefile.pm
 inc/Module/Install/Metadata.pm
 inc/Module/Install/Share.pm
 inc/Module/Install/Win32.pm
+inc/Module/Install/With.pm
 inc/Module/Install/WriteAll.pm
 lib/Padre/Plugin/SpellCheck.pm
 lib/Padre/Plugin/SpellCheck/Checker.pm
@@ -23,8 +24,6 @@ MYMETA.yml
 Padre-Plugin-SpellChecker.fbp
 README
 share/icons/16x16/spellcheck.png
-share/icons/README
-share/icons/spellcheck.png
 share/locale/Padre__Plugin__SpellCheck-ar.mo
 share/locale/Padre__Plugin__SpellCheck-ar.po
 share/locale/Padre__Plugin__SpellCheck-de.mo
