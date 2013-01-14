@@ -41,7 +41,7 @@
             "Padre" : "0.96",
             "Text::Hunspell" : "2.05",
             "Try::Tiny" : "0.12",
-            "perl" : "5.012005"
+            "perl" : "5.010001"
          }
       }
    },
@@ -58,6 +58,6 @@
          "url" : "http://svn.perlide.org/padre/trunk/Padre-Plugin-SpellCheck/"
       }
    },
-   "version" : "1.31_02",
+   "version" : "1.31_03",
    "x_module_name" : "Padre::Plugin::SpellCheck"
 }

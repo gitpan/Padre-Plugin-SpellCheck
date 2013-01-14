@@ -29,10 +29,10 @@ requires:
   Padre: 0.96
   Text::Hunspell: 2.05
   Try::Tiny: 0.12
-  perl: 5.12.5
+  perl: 5.10.1
 resources:
   bugtracker: http://padre.perlide.org/trac
   homepage: http://padre.perlide.org/trac/wiki/PadrePluginSpellCheck
   license: http://dev.perl.org/licenses/
   repository: http://svn.perlide.org/padre/trunk/Padre-Plugin-SpellCheck/
-version: 1.31_02
+version: 1.31_03
