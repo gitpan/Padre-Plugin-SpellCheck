@@ -45,7 +45,7 @@ share/locale/Padre__Plugin__SpellCheck-tr.mo
 share/locale/Padre__Plugin__SpellCheck-tr.po
 share/locale/Padre__Plugin__SpellCheck-zh-tw.mo
 share/locale/Padre__Plugin__SpellCheck-zh-tw.po
-t/00.load.t
+t/00-load.t
 t/01-SpellCheck.t
 t/02-pod.t
 t/03-podcoverage.t

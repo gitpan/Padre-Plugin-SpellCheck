@@ -5,10 +5,11 @@ author:
 build_requires:
   ExtUtils::MakeMaker: 6.59
   Test::More: 0.98
+  Test::Requires: 0.06
 configure_requires:
-  ExtUtils::MakeMaker: 6.59
+  ExtUtils::MakeMaker: 0
 dynamic_config: 0
-generated_by: 'Module::Install version 1.06, CPAN::Meta::Converter version 2.120921'
+generated_by: 'ExtUtils::MakeMaker version 6.66, CPAN::Meta::Converter version 2.130880'
 license: perl
 meta-spec:
   url: http://module-build.sourceforge.net/META-spec-v1.4.html
@@ -16,22 +17,16 @@ meta-spec:
 name: Padre-Plugin-SpellCheck
 no_index:
   directory:
-    - inc
-    - share
     - t
-    - xt
+    - inc
 requires:
   Class::Accessor: 0.34
+  Encode: 2.51
   File::Which: 1.09
-  Moo: 1.000007
-  Padre: 0.96
-  Text::Hunspell: 2.05
+  Padre: 0.98
+  Text::Hunspell: 2.08
   Try::Tiny: 0.12
+  constant: 1.27
+  parent: 0.225
   perl: 5.010001
-resources:
-  bugtracker: http://padre.perlide.org/trac
-  homepage: http://padre.perlide.org/trac/wiki/PadrePluginSpellCheck
-  license: http://dev.perl.org/licenses/
-  repository: http://svn.perlide.org/padre/trunk/Padre-Plugin-SpellCheck/
-version: 1.31_03
-x_module_name: Padre::Plugin::SpellCheck
+version: 1.32

@@ -5,6 +5,7 @@ author:
 build_requires:
   ExtUtils::MakeMaker: 6.59
   Test::More: 0.98
+  Test::Requires: 0.06
 configure_requires:
   ExtUtils::MakeMaker: 6.59
 distribution_type: module
@@ -22,17 +23,22 @@ no_index:
     - share
     - t
     - xt
+recommends:
+  Test::Pod: 1.46
+  Test::Pod::Coverage: 1.08
 requires:
   Class::Accessor: 0.34
+  Encode: 2.51
   File::Which: 1.09
-  Moo: 1.000007
-  Padre: 0.96
-  Text::Hunspell: 2.05
+  Padre: 0.98
+  Text::Hunspell: 2.08
   Try::Tiny: 0.12
+  constant: 1.27
+  parent: 0.225
   perl: 5.10.1
 resources:
   bugtracker: http://padre.perlide.org/trac
   homepage: http://padre.perlide.org/trac/wiki/PadrePluginSpellCheck
   license: http://dev.perl.org/licenses/
   repository: http://svn.perlide.org/padre/trunk/Padre-Plugin-SpellCheck/
-version: 1.31_03
+version: 1.32
